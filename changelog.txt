@@ -1,3 +1,24 @@
+VERSION[beta][2026/06/05]
+
+--- New to Path of Building ---
+* Add Facebreaker unique gloves support (Anakior)
+* Implement parsing for remnant effect mods (moxaj)
+* Add 0.5.1 Passive tree (trompetin17)
+* Add support for various Parry modifiers (Debuff Magnitude, Range, Duration) (majochem)
+
+--- Fixed Crashes ---
+* Fix crash when importing a character that uses Facebreaker gloves (LocalIdentity)
+* Fix crash when clicking on empty rune list (vaisest)
+
+--- Fixed Calculations ---
+* Fix Deflect chance not being capped at 95% (LocalIdentity)
+* Fix Hollow Form support effects being switched (LocalIdentity)
+* Fix Virtuous Barrier not factoring the base 3 of each type of mote (LocalIdentity)
+
+--- Other changes ---
+* Fix hidden oracle nodes being included in power report and added missing connector images (MrHB212)
+* Release 0.19.0 (github-actions[bot])
+
 VERSION[0.19.0][2026/06/05]
 
 --- New to Path of Building ---

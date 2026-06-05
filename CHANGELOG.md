@@ -1,5 +1,28 @@
 # Changelog
 
+## [beta](https://github.com/PathOfBuildingCommunity/PathOfBuilding-PoE2/tree/beta) (2026/06/05)
+
+[Full Changelog](https://github.com/PathOfBuildingCommunity/PathOfBuilding-PoE2/compare/v0.18.0...beta)
+
+
+## What's Changed
+### New to Path of Building
+- Add Facebreaker unique gloves support [\#2097](https://github.com/PathOfBuildingCommunity/PathOfBuilding-PoE2/pull/2097) ([Anakior](https://github.com/Anakior))
+- Implement parsing for remnant effect mods [\#2093](https://github.com/PathOfBuildingCommunity/PathOfBuilding-PoE2/pull/2093) ([moxaj](https://github.com/moxaj))
+- Add 0.5.1 Passive tree [\#2096](https://github.com/PathOfBuildingCommunity/PathOfBuilding-PoE2/pull/2096) ([trompetin17](https://github.com/justjuangui))
+- Add support for various Parry modifiers (Debuff Magnitude, Range, Duration) [\#2080](https://github.com/PathOfBuildingCommunity/PathOfBuilding-PoE2/pull/2080) ([majochem](https://github.com/majochem))
+### Fixed Crashes
+- Fix crash when importing a character that uses Facebreaker gloves [\#2098](https://github.com/PathOfBuildingCommunity/PathOfBuilding-PoE2/pull/2098) ([LocalIdentity](https://github.com/LocalIdentity))
+- Fix crash when clicking on empty rune list [\#2091](https://github.com/PathOfBuildingCommunity/PathOfBuilding-PoE2/pull/2091) ([vaisest](https://github.com/vaisest))
+### Fixed Calculations
+- Fix Deflect chance not being capped at 95% [\#2100](https://github.com/PathOfBuildingCommunity/PathOfBuilding-PoE2/pull/2100) ([LocalIdentity](https://github.com/LocalIdentity))
+- Fix Hollow Form support effects being switched [\#2099](https://github.com/PathOfBuildingCommunity/PathOfBuilding-PoE2/pull/2099) ([LocalIdentity](https://github.com/LocalIdentity))
+- Fix Virtuous Barrier not factoring the base 3 of each type of mote [\#2103](https://github.com/PathOfBuildingCommunity/PathOfBuilding-PoE2/pull/2103) ([LocalIdentity](https://github.com/LocalIdentity))
+### Other changes
+- Fix hidden oracle nodes being included in power report and added missing connector images [\#2090](https://github.com/PathOfBuildingCommunity/PathOfBuilding-PoE2/pull/2090) ([MrHB212](https://github.com/MrHB212))
+- Release 0.19.0 [\#2104](https://github.com/PathOfBuildingCommunity/PathOfBuilding-PoE2/pull/2104) ([github-actions](https://github.com/github-actions)[bot])
+
+
 ## [v0.19.0](https://github.com/PathOfBuildingCommunity/PathOfBuilding-PoE2/tree/v0.19.0) (2026/06/05)
 
 [Full Changelog](https://github.com/PathOfBuildingCommunity/PathOfBuilding-PoE2/compare/v0.18.0...v0.19.0)
