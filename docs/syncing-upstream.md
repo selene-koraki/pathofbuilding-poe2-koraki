@@ -11,7 +11,7 @@ This is low-friction here because **all of this fork's custom code lives in
 
 ## Option 1 — Automated (recommended): the `Sync from upstream` Action
 
-`.github/workflows/upstream-sync.yml` runs daily (and on-demand). When upstream
+`.github/workflows/upstream-sync.yml` runs weekly (and on-demand). When upstream
 has new commits it pushes them to a `sync/upstream-dev` branch and opens a normal
 **pull request** into your `dev`, which you review and merge. It never
 force-pushes your work.
@@ -28,8 +28,8 @@ To activate it:
    *Run workflow* to confirm it works.
 
 Notes: GitHub pauses `cron` schedules after ~60 days of no repo activity (just
-re-run it manually to resume), and the daily time is adjustable via the `cron`
-line.
+re-run it manually to resume), and the schedule is adjustable via the `cron`
+line (e.g. `* * 1` = Mondays).
 
 ## Option 2 — GitHub's built-in "Sync fork" button
 
