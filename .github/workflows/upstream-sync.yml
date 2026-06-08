@@ -1,0 +1,75 @@
+name: Sync from upstream
+
+# Keeps this fork current with PathOfBuildingCommunity/PathOfBuilding-PoE2.
+# Upstream ships engine fixes, data-mined content and patch-note/changelog
+# updates as commits on its `dev` branch, so syncing `dev` captures all of it
+# (including new SimpleGraphic DLLs once their update PR is merged upstream).
+#
+# This never force-pushes your branch: it opens a normal PR you review and
+# merge. Because all of this fork's custom code lives in `web/` and the engine
+# in `src/` is untouched, these PRs merge cleanly.
+
+on:
+  schedule:
+    - cron: "17 6 * * *"   # daily at 06:17 UTC
+  workflow_dispatch:
+    inputs:
+      base:
+        description: "Branch in this fork to receive upstream changes"
+        default: "dev"
+        required: true
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: upstream-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    env:
+      UPSTREAM: https://github.com/PathOfBuildingCommunity/PathOfBuilding-PoE2.git
+      UPSTREAM_BRANCH: dev
+      BASE: ${{ github.event.inputs.base || 'dev' }}
+      SYNC_BRANCH: sync/upstream-dev
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure git
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Fetch upstream
+        run: |
+          git remote add upstream "$UPSTREAM" 2>/dev/null || git remote set-url upstream "$UPSTREAM"
+          git fetch --no-tags upstream "$UPSTREAM_BRANCH"
+
+      - name: Count new upstream commits
+        id: diff
+        run: |
+          behind=$(git rev-list --count "origin/$BASE..upstream/$UPSTREAM_BRANCH")
+          echo "behind=$behind" >> "$GITHUB_OUTPUT"
+          echo "::notice::origin/$BASE is $behind commit(s) behind upstream/$UPSTREAM_BRANCH"
+
+      - name: Update sync branch
+        if: steps.diff.outputs.behind != '0'
+        run: git push --force origin "upstream/$UPSTREAM_BRANCH:refs/heads/$SYNC_BRANCH"
+
+      - name: Open or refresh pull request
+        if: steps.diff.outputs.behind != '0'
+        run: |
+          open=$(gh pr list --head "$SYNC_BRANCH" --base "$BASE" --state open --json number --jq 'length')
+          if [ "$open" = "0" ]; then
+            gh pr create --base "$BASE" --head "$SYNC_BRANCH" \
+              --title "Sync from upstream ($(date -u +%Y-%m-%d)) — ${{ steps.diff.outputs.behind }} commit(s)" \
+              --body $'Automated sync of `upstream/dev` into `'"$BASE"$'`.\n\nUpstream brings engine fixes, data-mined content and patch-note/changelog updates. Review the diff and merge.\n\nYour custom code in `web/` is not touched by this PR.'
+          else
+            echo "Existing PR refreshed with the latest upstream commits."
+          fi
