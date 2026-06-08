@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>Path of Building 2 — Web (PoC)</title>
+	<link rel="preconnect" href="https://fonts.googleapis.com" />
+	<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=EB+Garamond:ital@0;1&display=swap" rel="stylesheet" />
+	<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+	<header class="topbar">
+		<h1>Path of Building <span class="two">II</span></h1>
+		<p class="tagline">web client &mdash; proof of concept</p>
+	</header>
+
+	<main class="layout">
+		<aside class="panel builds">
+			<h2 class="section">Builds</h2>
+			<ul id="buildList" class="build-list"><li class="muted">loading&hellip;</li></ul>
+		</aside>
+
+		<section class="panel character">
+			<div id="charHeader" class="char-header">
+				<div class="char-title" id="charClass">&mdash;</div>
+				<div class="char-sub" id="charSub"></div>
+			</div>
+			<h2 class="section">Statistics</h2>
+			<div id="stats" class="stat-list"><p class="muted">Select a build.</p></div>
+		</section>
+	</main>
+
+	<footer class="statusbar"><span id="status">Engine idle.</span></footer>
+	<script src="/app.js"></script>
+</body>
+</html>
