@@ -19,11 +19,14 @@
 | v1 scope | **Core planner first** | Tree, Skills, Items, Config, Calcs, import/export build codes. |
 | Deferred to v2 | Trade-site search, party/support play, full item crafting, PoE-account import. |
 | Deployment | **Self-hosted local server** (single user, LAN) | Long-running daemon; transport-agnostic boundary kept for future hosted/WASM. |
+| v1 must-have | **Server-side Build Manager + cross-device continuity** | Pick from saved builds or start new; continue a build across laptop/phone/desktop and swap on the fly. Delivered in Phases 0–1, not deferred. |
 | Hard constraint | **`src/` engine stays unmodified** | Preserves clean upstream sync (`.github/workflows/upstream-sync.yml`). All new code lives in `web/`. |
 
-**North star:** open `http://<my-server>:<port>` from any device on my LAN and plan
-a PoE2 build with a UI that looks like the game and is nicer to use than the
-desktop app — computing on the real PoB engine, sharing build files with it.
+**North star:** open `http://<my-server>:<port>` from any device on my LAN, pick from
+my saved builds (or start a new one), and plan a PoE2 build with a UI that looks like
+the game and is nicer to use than the desktop app — **continuing a build seamlessly
+across laptop, phone, and desktop**, computing on the real PoB engine, with the
+server as the single source of truth and live cross-device sync.
 
 ---
 
@@ -64,16 +67,26 @@ Today it travels browser→gateway(WS)→engine(stdio). A future WASM build woul
 the engine into a Web Worker and carry the *same* schema over `postMessage`,
 changing only the gateway, not the engine or the app's API client.
 
-**State model (v1):** engine is authoritative and stateful per session. After any
-mutating command it recomputes and the gateway pushes a **full JSON projection** of
-the build + computed stats (`build.updated` event). Simple and correct; switch to
-deltas only if payload size becomes a problem (it won't for a single user).
+**State model (v1) — build-keyed shared sessions (this is what enables cross-device):**
+The engine is authoritative and holds each open build in memory as a **session keyed
+by the build**, *not* by the WebSocket connection. Every device that opens build *X*
+**subscribes to the same session**: it immediately receives the current live state,
+and every subsequent mutation (from any device) is broadcast as a `build.updated`
+event to **all** subscribers, so a laptop, phone, and desktop stay in lockstep.
+Commands are processed by the engine in a single serialized queue, giving a total
+order (last-write-wins, no conflict resolution needed for one user on several
+devices). Mutations also trigger a **debounced autosave** to the shared `Builds/`
+XML file, so a device that connects later — even after the session was evicted from
+memory — loads the latest saved state. After any mutating command the gateway pushes
+a **full JSON projection** of the build + computed stats; switch to deltas only if
+payload size ever matters (it won't for a single user). See **§7B** for the full
+cross-device design.
 
 **Repo layout**
 ```
 web/
   engine/        kernel.lua, host.lua (host shims), api/{build,character,tree,skills,items,config,calcs,notes}.lua, serialize.lua
-  server/        src/{index,rpc,builds,sessions,ws,static}.ts, package.json, tsconfig
+  server/        src/{index,rpc,builds,library,sessions,ws,static}.ts, package.json, tsconfig
   app/           src/{api,design,components,tabs,tree,store,routes}, index.html, vite.config, package.json
   shared/        rpc-schema.ts, dto.ts (build/stat/item/tree DTOs)
   poc/           the original proof-of-concept (archived; superseded by the above)
@@ -100,8 +113,13 @@ emit a result and a `build.updated` event on stdout. All wrapped in `pcall` so a
 bad command returns an error, never crashes the kernel.
 
 **Command/query surface (v1)** — illustrative, grouped by domain:
-- **build**: `list`, `new`, `load{name}`, `save{name?}`, `importCode{code}`,
-  `exportCode` → string, `delete{name}`, `getState` (full projection).
+- **library** (the Build Manager — server-side, device-agnostic): `list` → build
+  summaries `{id, name, class, ascendancy, level, mainSkill, folder, favorite,
+  updatedAt}`; `open{id}` (subscribe this device to the build's shared session);
+  `close{id}`; `new{name}`; `duplicate{id}`; `rename{id,name}`; `delete{id}`;
+  `move{id,folder}`; `favorite{id,bool}`; `listFolders`; `importCode{code,name}`.
+- **build**: `save{name?}` (also runs on autosave), `exportCode` → string,
+  `getState` (full projection of the *currently open* build for this session).
 - **character**: `setLevel`, `setClass`, `setAscendancy`, `getMeta`.
 - **tree**: `getTreeData{version}` (geometry + sprite manifest, served once & cached),
   `allocNode{id}`, `deallocNode{id}`, `allocPath{ids}`, `setMastery{node,effect}`,
@@ -116,7 +134,10 @@ bad command returns an error, never crashes the kernel.
   `compare{mutation}` → stat deltas (powers a "what does this node/item do" view).
 - **notes**: `get`, `set{text}`.
 
-**Events:** `build.updated{state}`, `progress{msg}`, `error{where,msg}`.
+**Events:** `build.updated{state}` (to all subscribers of a build),
+`library.changed{summaries}` (build added/renamed/deleted/moved — refreshes every
+device's manager list), `presence{buildId, devices}` (which devices are viewing a
+build), `progress{msg}`, `error{where,msg}`.
 
 **Serialization:** a `serialize.lua` turns engine objects into stable JSON DTOs
 (defined in `web/shared/dto.ts`). Color escapes (`^x`, `^N`) are passed through and
@@ -144,6 +165,17 @@ panel/`--bg` tokens, corner ticks). Dark theme is the default and only theme for
 - Developed in isolation (Storybook or a `/dev` route) so the system is testable
   and consistent before tabs consume it.
 
+### Build Manager (the home screen) + on-the-fly switching
+- A **Build Library** landing screen: a grid/list of saved builds showing class
+  color, ascendancy, level, main skill, last-modified, and a favorite star;
+  searchable and sortable; folders; create / duplicate / rename / delete / import.
+- A **quick build-switcher** reachable from anywhere (in the `Ctrl-K` palette and a
+  header dropdown) so you can swap builds without leaving the planner.
+- **Cross-device affordances:** a subtle "also open on *iPhone*" presence indicator
+  (from the `presence` event) and an autosave/"synced" status chip, so it's obvious
+  the build is live everywhere. Opening the same build on a second device picks up
+  the current state instantly (see §7B).
+
 ### Information-architecture improvements over the desktop UI
 The desktop app is cramped, hairline-bordered, and keyboard-shallow. v1 improves:
 - **Persistent stat sidebar** that stays put across tabs, with collapsible sections.
@@ -167,7 +199,9 @@ toasts (engine errors surfaced, never swallowed), undo/redo, autosave indicator.
 
 | Desktop feature | v1 | Notes |
 |---|---|---|
-| Build list: list/new/open/delete, folders | ✅ | Folders may be flat in v1. |
+| Build list: list/new/open/delete, folders | ✅ | Upgraded to the **Build Manager** (rich metadata, search, favorites, duplicate). |
+| **Cross-device continuity** (start on one device, continue on another) | ✅ ★new | Beyond desktop. Shared server-side sessions + autosave (§7B). |
+| **Live multi-device sync** (edit on laptop, phone follows) | ✅ ★new | Beyond desktop. Broadcast `build.updated` to all subscribers. |
 | Sidebar: class/asc/level, main group/skill, stat set | ✅ | |
 | Sidebar: full stat panel (offence + defence) | ✅ | Reuses `build.controls.statBox.list`. |
 | Config tab: toggles/conditions/enemy/map mods | ✅ | Generated from `ConfigOptions` schema. |
@@ -203,26 +237,38 @@ web app and the headless engine.
 Each phase ends only when its **Definition of Done (DoD)** passes. Commit per
 milestone; keep the test suite green; never modify `src/`.
 
-### Phase 0 — Foundations
-- **Goal:** the three-tier skeleton runs end-to-end; design system seeded; CI green.
-- **Deliverables:** repo layout (§2); engine kernel with JSON-RPC loop + `build.load`
-  + `calcs.getSidebar`; gateway (spawn/supervise engine, WS, static, build-file I/O);
-  React app shell with the design tokens, `ColorText`, `StatPanel`, and a working
-  "open a build → see live stats" flow (port the PoC into the new architecture);
+### Phase 0 — Foundations (incl. shared-session backbone)
+- **Goal:** the three-tier skeleton runs end-to-end with **build-keyed shared
+  sessions**; design system seeded; CI green.
+- **Deliverables:** repo layout (§2); engine kernel with JSON-RPC loop + `library.open`
+  + `build.load` + `calcs.getSidebar`; gateway that spawns/supervises the engine and
+  implements the **shared-session model** (subscribe-by-build, broadcast
+  `build.updated` to all subscribers, reconnect handling) + WS + static + build-file
+  I/O + **debounced autosave**; React app shell with design tokens, `ColorText`,
+  `StatPanel`, and a working "open a build → see live stats" flow (port the PoC);
   shared RPC types; Vite dev proxy; Dockerfile/compose + `run.sh`; CI (lint, typecheck,
   unit, engine contract test).
-- **DoD:** `docker compose up` serves the app on the LAN; selecting a build shows the
-  full stat sidebar; killing the engine subprocess auto-restarts; CI passes.
+- **DoD:** `docker compose up` serves on the LAN; selecting a build shows the full stat
+  sidebar; **opening the same build in two browser tabs/devices shows the same live
+  state and one tab's change appears in the other within ~200 ms**; killing the engine
+  subprocess auto-restarts; CI passes.
 
-### Phase 1 — Build lifecycle + Sidebar interactivity + Config
-- **Goal:** a build is fully *configurable* and recomputes live.
-- **Deliverables:** build CRUD (new/save/delete/list, shared folder); character
-  controls (level/class/ascendancy); main group/skill/stat-set selectors; **Config
-  tab** auto-generated from `ConfigOptions` (toggles, dropdowns, numbers, conditions,
-  enemy, map mods) with live recompute; optimistic UI + `build.updated` reconcile;
-  autosave.
-- **DoD:** toggling any config option updates the sidebar identically to the desktop
-  app; numeric parity test passes on the config corpus.
+### Phase 1 — Build Manager + cross-device continuity + Sidebar + Config
+- **Goal:** the full **Build Manager** works from any device, builds continue across
+  devices, and a build is fully *configurable* with live recompute.
+- **Deliverables:** **Build Library** screen (rich summaries, search/sort, favorites,
+  folders) + quick-switcher; `library.*` commands (new/open/duplicate/rename/delete/
+  move/favorite/importCode) with `library.changed` + `presence` events; cross-device
+  continuity hardening (reconnect, late-join loads latest autosaved state, presence
+  indicator, "synced" chip); character controls (level/class/ascendancy); main
+  group/skill/stat-set selectors; **Config tab** auto-generated from `ConfigOptions`
+  (toggles, dropdowns, numbers, conditions, enemy, map mods) with live recompute;
+  optimistic UI + `build.updated` reconcile.
+- **DoD:** from a phone and a laptop simultaneously: the library lists all builds and
+  reflects create/rename/delete live; **starting/editing a build on one device and
+  picking it up on the other shows the latest state with no manual save**; swapping
+  builds on the fly works; toggling any config option updates the sidebar identically
+  to the desktop app; numeric parity test passes on the config corpus.
 
 ### Phase 2 — Skills
 - **Deliverables:** socket-group list, add/remove/reorder groups; gem add/remove,
@@ -295,6 +341,53 @@ milestone; keep the test suite green; never modify `src/`.
 
 ---
 
+## 7B. Cross-device build sessions & the Build Manager
+
+The feature: **start a build on my laptop, continue on my phone or desktop, and swap
+builds on the fly — from anywhere in the house.** The architecture makes this natural
+because the server is the single source of truth.
+
+**Session model (sessions are keyed by build, not by connection):**
+- The gateway keeps a `Session` per *open build id*, each owning one in-memory engine
+  view of that build and a set of subscribed WebSocket clients (devices).
+- `library.open{id}` from any device **attaches** that device to the build's session:
+  the gateway replies with the current full state, then streams `build.updated` for
+  every subsequent mutation **from any device** → all devices converge in lockstep.
+- The engine processes commands in a **single serialized queue**, so there is a total
+  order and **last-write-wins** — correct and conflict-free for one user across
+  several devices (no CRDT needed).
+
+**Persistence & late join (continue later, even after a restart):**
+- Every mutation schedules a **debounced autosave** (e.g. 1–2 s after the last change,
+  and on disconnect) to the shared `Builds/<name>.xml` — the same files the desktop
+  app uses, so the desktop app and any device see the same builds.
+- If a build's session was evicted (idle eviction after the last device leaves), the
+  next `library.open` **re-hydrates it from the latest autosaved XML**. So "pick it up
+  later" always loads the most recent state, whether or not anything was still warm.
+
+**Switching on the fly:** `library.open{otherId}` swaps the device's subscription to a
+different build (the previous build's session stays warm if other devices are on it,
+else autosaves and idles). The quick-switcher / `Ctrl-K` drives this.
+
+**Presence:** the gateway tracks devices per session and emits `presence{buildId,
+devices}` so the UI can show "also open on *Pixel 8*" and a live "synced" chip. Each
+device sends a small label (e.g. UA-derived) on connect.
+
+**Reconnect & offline:** the WS client auto-reconnects with backoff; on reconnect it
+re-`open`s the last build and reconciles to the server's current state (server is
+authoritative, so no client-side merge). Brief disconnects are invisible.
+
+**Optional polish (not required for DoD):** per-build **view state** (active tab,
+tree pan/zoom, selected skill) can be persisted in a sidecar so handoff restores not
+just the build data but *where you were*. Core requirement is build-data continuity;
+view-state restoration is a nice-to-have.
+
+**Security note:** v1 is single-user on a trusted LAN with **no auth**. Before
+exposing beyond the LAN, put the gateway behind a reverse proxy with auth — do not
+add multi-tenant auth in v1.
+
+---
+
 ## 8. Testing & "parity" definition
 
 - **Engine contract tests (busted):** the existing `spec/System/*` suite keeps
@@ -308,6 +401,10 @@ milestone; keep the test suite green; never modify `src/`.
 - **Front-end:** Vitest + React Testing Library for components/store; Playwright e2e
   for key flows (open build, allocate node, equip item, toggle config, export code);
   optional visual-regression snapshots of the design system.
+- **Cross-device test (Playwright, two contexts):** open the same build in two browser
+  contexts; a mutation in context A appears in context B within a budget (~200 ms);
+  rename/delete in the manager propagates to both; after evicting the session, a fresh
+  open loads the latest autosaved state. This guards the §7B continuity feature.
 - **Performance budgets:** tree ≥60 fps on a mid laptop; mutation→repaint < 150 ms
   for a typical build; initial load < 3 s on LAN (excluding first sprite fetch).
 
@@ -365,6 +462,11 @@ Authoritative spec: web/PLAN.md. Follow it exactly.
 Architecture: React+TS+Vite front-end (web/app) ⇄ WebSocket ⇄ Node/TS gateway
 (web/server) ⇄ JSON-RPC/stdio ⇄ LuaJIT engine kernel (web/engine) that drives
 src/ logic without rendering. Shared RPC/DTO types in web/shared.
+
+Must-have early (Phases 0–1, NOT deferred): a server-side Build Manager + cross-device
+continuity per §7B — builds are keyed server-side as shared sessions, so I can start a
+build on one device, continue on another, and swap builds on the fly, with live sync
+and autosave to the shared Builds/ folder.
 
 Execute the phases in web/PLAN.md §6 IN ORDER (0→7). For each phase:
   1. Implement its deliverables.
