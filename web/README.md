@@ -1,59 +1,77 @@
-# PoB2 Web Client — proof of concept
+# PoB2 Web
 
-A native-Linux path to using Path of Building 2 **without Wine for the parts
-that are ported**, and a foundation for a modern, PoE2-styled UI.
+A modern, PoE2-styled web client for Path of Building 2, driving the **unmodified**
+LuaJIT engine in `src/` headlessly. Self-hosted on your LAN; usable from any
+device, with cross-device build continuity. See **[PLAN.md](./PLAN.md)** for the
+full spec and roadmap.
 
-It runs the **existing** PoB2 calculation engine headlessly under LuaJIT and
-exposes it over a small `localhost` HTTP API. A browser front-end (plain
-HTML/CSS/JS, styled after the in-game PoE2 look) calls that API. The engine in
-`src/` is **not modified** — everything here lives under `web/`.
+## Architecture
 
 ```
-web/
-  server.lua      Boots the engine (via src/HeadlessWrapper.lua) + HTTP API
-  run.sh          One-command launcher (installs Lua deps, starts server, opens browser)
-  public/         The browser UI (index.html, style.css, app.js)
-  builds/         Build XML files the service reads (a Sample is auto-generated)
+Browser (React+TS+Vite, Zustand)
+   │  WebSocket (typed JSON-RPC)
+Node gateway (web/server)  ── shared build sessions, autosave, static serving
+   │  newline-delimited JSON-RPC over stdio
+LuaJIT engine kernel (web/engine)  ── drives src/ logic, never renders
+   │  reads/writes
+Builds/ (shared plain-XML, same files the desktop app uses)
 ```
 
-## Run it
+- **`web/engine/`** — `kernel.lua` (JSON-RPC loop), `serialize.lua`, `api/*.lua`.
+  Boots via `HeadlessWrapper.lua`, wires real `Deflate`/`Inflate`, calls the same
+  logic methods the desktop UI and busted specs use. **Never edits `src/`.**
+- **`web/server/`** — Node/TS gateway: supervises the engine (auto-restart),
+  brokers WebSocket ⇄ JSON-RPC, serves the SPA, owns the Builds folder, and runs
+  build-keyed **shared sessions** so multiple devices stay in lockstep (§7B).
+- **`web/app/`** — React SPA: design system + tabs. Engine output (including
+  `^`-colour codes) is rendered as-is; calc/allocation logic is never reimplemented.
+- **`web/shared/`** — TypeScript RPC + DTO contract, imported by gateway and app.
+
+## Run it (Docker — no native Node/LuaJIT needed)
 
 ```bash
-./web/run.sh
-# then open http://127.0.0.1:8088  (run.sh tries to open it for you)
+web/run.sh                # build + start the LAN service (docker compose up -d)
+# open http://<server-ip>:7632 from any device on the LAN
+web/run.sh logs           # follow gateway logs
+web/run.sh down           # stop
+web/run.sh dev            # dev mode: gateway (tsx watch) + Vite HMR
+web/run.sh test           # full test suite (engine + server + app + busted)
 ```
 
-Requirements: `luajit`, and the LuaRocks modules `luasocket`, `lua-zlib`,
-`luautf8` (run.sh installs the missing ones).
-
-## Share build files with the desktop / Wine app
-
-Both front-ends read/write the same plain-XML build files, so point the service
-at your existing Builds folder and switch between them freely:
+Or directly:
 
 ```bash
-export POB_BUILD_DIR="$HOME/.wine/drive_c/users/$USER/AppData/Roaming/Path of Building (PoE2)/Builds"
-./web/run.sh
+docker compose -f web/docker-compose.yml up -d --build
 ```
 
-## What works today (this PoC)
+### Configuration (env)
 
-- Engine boots headless on Linux (no SimpleGraphic, no Wine).
-- `GET /api/builds` — lists build files.
-- `GET /api/build?name=<name>` — loads a build and returns the engine's own
-  computed stat sidebar as JSON (with the game's colour codes preserved).
-- Browser UI renders the build's class/level/skill and full stat panel.
-- Real `Deflate`/`Inflate` (zlib) are wired, so PoB import/export codes can be
-  supported next.
+| Var | Default | Meaning |
+|---|---|---|
+| `POB_PORT` | `7632` | LAN port. |
+| `HOST` | `0.0.0.0` | Bind address (LAN-reachable). |
+| `POB_BUILD_DIR` | `./web/builds` | Shared Builds folder (auto-created; a `Sample` build is generated on first run). |
+| `POB_BUILD_DIR_HOST` | `./builds` | Host path bind-mounted into the container. |
+| `POB_AUTOSAVE_MS` | `1500` | Debounced autosave delay after the last change. |
+| `POB_SESSION_IDLE_MS` | `300000` | Idle eviction after the last device leaves. |
 
-## What's next (the roadmap from the review)
+**Sharing builds with a desktop/Wine install:** point `POB_BUILD_DIR_HOST` at the
+desktop app's Builds folder, e.g.
+`POB_BUILD_DIR_HOST="$HOME/.wine/drive_c/users/$USER/AppData/Roaming/Path of Building (PoE2)/Builds"`.
+The web app reads/writes the same plain-XML files.
 
-1. Editable config (toggles/inputs) → recompute on change (WebSocket).
-2. Items (paste already returns structured data) and Skills tabs.
-3. Passive tree view (the big one) in Canvas/WebGL.
-4. Optional: swap the transport (localhost → in-tab WASM or a hosted server)
-   behind the same API without changing the front-end.
+> **Security:** v1 is single-user on a trusted LAN with **no auth**. Put the
+> gateway behind a reverse proxy with auth before exposing it beyond the LAN.
 
-This is intentionally a thin vertical slice to prove the architecture; it is not
-feature-complete. The desktop app (via Wine) remains the full-featured fallback
-while tabs are migrated one at a time.
+## Tests
+
+- **Engine contract** (`web/server/test/engine.contract.test.ts`) — spawns the real
+  kernel, asserts the JSON-RPC surface drives the engine.
+- **Cross-device** (`web/server/test/crossdevice.test.ts`) — two WS clients on one
+  build: a mutation on A reaches B in ~200 ms, autosaves, and a late joiner loads
+  the latest state after eviction (§7B guard).
+- **Engine restart** (`web/server/test/restart.test.ts`) — kill → auto-respawn.
+- **App** (`web/app/src/**/*.test.tsx`) — Vitest + RTL for the design system.
+- **Upstream busted** — the engine suite still passes (proves `src/` untouched).
+
+The `web/poc/` folder is the original proof-of-concept, kept for reference.

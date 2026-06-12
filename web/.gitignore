@@ -1,0 +1,12 @@
+# Web app — local build + runtime artifacts (never committed)
+node_modules/
+*/node_modules/
+app/dist/
+server/dist/
+builds/
+!builds/.gitkeep
+.pob-web.json
+playwright-report/
+test-results/
+.vite/
+*.tsbuildinfo

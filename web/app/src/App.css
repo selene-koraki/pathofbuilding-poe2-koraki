@@ -1,0 +1,143 @@
+.app {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.topbar {
+  position: relative;
+  text-align: center;
+  padding: 22px 16px 16px;
+  border-bottom: 1px solid var(--bronze-line);
+  box-shadow:
+    0 1px 0 #000,
+    0 2px 0 var(--bronze-faint);
+  background: linear-gradient(180deg, rgba(40, 32, 20, 0.35), transparent);
+}
+.topbar h1 {
+  margin: 0;
+  font-family: var(--font-head);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  font-size: var(--fs-2xl);
+  color: var(--gold-bright);
+  text-shadow:
+    0 0 18px rgba(200, 170, 100, 0.25),
+    0 2px 2px #000;
+}
+.topbar h1 .two {
+  color: var(--gold);
+}
+.tagline {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  font-style: italic;
+  letter-spacing: 0.05em;
+  font-size: var(--fs-sm);
+}
+.topbar-status {
+  position: absolute;
+  top: 16px;
+  right: 18px;
+  display: flex;
+  gap: var(--s-2);
+}
+
+.layout {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 18px;
+  padding: 20px;
+  max-width: 1280px;
+  width: 100%;
+  margin: 0 auto;
+}
+@media (max-width: 760px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.new-build {
+  display: flex;
+  gap: var(--s-2);
+  margin-bottom: var(--s-3);
+}
+.new-build .pob-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.build-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.build-list .pob-btn {
+  width: 100%;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.bl-name {
+  color: inherit;
+}
+.bl-meta {
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+}
+
+.planner-grid {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 18px;
+  align-items: start;
+}
+@media (max-width: 980px) {
+  .planner-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.char-title {
+  font-family: var(--font-head);
+  font-size: var(--fs-xl);
+  color: var(--gold-bright);
+  letter-spacing: 0.06em;
+}
+.char-sub {
+  color: var(--text-dim);
+  margin: 4px 0 14px;
+  font-size: var(--fs-md);
+}
+.level-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+}
+.level-row .pob-input {
+  width: 80px;
+}
+
+.stats-panel {
+  position: sticky;
+  top: 20px;
+}
+
+.statusbar {
+  border-top: 1px solid var(--bronze-faint);
+  padding: 8px 20px;
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+  text-align: center;
+}
+.muted {
+  color: var(--text-muted);
+  font-style: italic;
+}

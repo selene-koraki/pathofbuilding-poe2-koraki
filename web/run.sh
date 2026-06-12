@@ -1,34 +1,60 @@
 #!/usr/bin/env bash
-# Path of Building 2 — web client launcher (Linux, native, no Wine).
-# Boots the Lua calculation engine as a local HTTP service and opens the
-# browser UI. The engine runs under LuaJIT directly against src/.
+# PoB2 Web — one-command launcher.
+#
+#   web/run.sh            start the LAN service (docker compose up -d --build)
+#   web/run.sh up         same as above
+#   web/run.sh dev        dev mode: gateway (tsx watch) + Vite HMR in containers
+#   web/run.sh down       stop the service
+#   web/run.sh logs       follow gateway logs
+#   web/run.sh test       run the full test suite (engine + server + app) in a container
+#
+# Everything runs in Docker — no native Node/LuaJIT needed on the host.
 set -euo pipefail
 
-REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-PORT="${POB_PORT:-8088}"
-export POB_PORT="$PORT"
-export POB_WEB_ROOT="${POB_WEB_ROOT:-$REPO/web/public}"
-# Point this at your desktop/Wine PoB "Builds" folder to share build files, e.g.
-#   export POB_BUILD_DIR="$HOME/.wine/drive_c/users/$USER/AppData/Roaming/Path of Building (PoE2)/Builds"
-export POB_BUILD_DIR="${POB_BUILD_DIR:-$REPO/web/builds}"
+cd "$(dirname "$0")"
+COMPOSE=(docker compose -f docker-compose.yml)
+PORT="${POB_PORT:-7632}"
+TOOLCHAIN=pob2-web-toolchain
 
-# --- dependency check ---------------------------------------------------
-command -v luajit >/dev/null || { echo "error: luajit not found (install luajit)"; exit 1; }
-need_rock() { luajit -e "require('$1')" >/dev/null 2>&1; }
-missing=()
-need_rock socket || missing+=(luasocket)
-need_rock zlib   || missing+=(lua-zlib)
-need_rock "lua-utf8" || missing+=(luautf8)
-if [ "${#missing[@]}" -gt 0 ]; then
-	echo "Installing Lua deps: ${missing[*]}"
-	for r in "${missing[@]}"; do luarocks install "$r" >/dev/null || luarocks --local install "$r"; done
-fi
+ensure_toolchain() {
+  if ! docker image inspect "$TOOLCHAIN" >/dev/null 2>&1; then
+    echo "[run] building toolchain image…"
+    docker build -f Dockerfile --target toolchain -t "$TOOLCHAIN" ..
+  fi
+}
 
-mkdir -p "$POB_BUILD_DIR"
-
-echo "Starting PoB2 engine service on http://127.0.0.1:$PORT …"
-( sleep 2; command -v xdg-open >/dev/null && xdg-open "http://127.0.0.1:$PORT" >/dev/null 2>&1 || true ) &
-
-cd "$REPO/src"
-exec env LUA_PATH="../runtime/lua/?.lua;../runtime/lua/?/init.lua;;" \
-	luajit "$REPO/web/server.lua"
+case "${1:-up}" in
+  up|"")
+    "${COMPOSE[@]}" up -d --build
+    echo "[run] PoB2 Web up on http://0.0.0.0:${PORT} (reachable from any LAN device)"
+    ;;
+  dev)
+    ensure_toolchain
+    "${COMPOSE[@]}" --profile dev up
+    ;;
+  down)
+    "${COMPOSE[@]}" down
+    ;;
+  logs)
+    "${COMPOSE[@]}" logs -f web
+    ;;
+  test)
+    ensure_toolchain
+    run() { docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp -e npm_config_cache=/tmp/.npm \
+              -v "$(cd .. && pwd)":/app -w "$1" "$TOOLCHAIN" sh -c "$2"; }
+    echo "== installing deps =="
+    run /app/web/app    "npm install --no-audit --no-fund >/dev/null"
+    run /app/web/server "npm install --no-audit --no-fund >/dev/null"
+    echo "== app: typecheck + vitest =="
+    run /app/web/app    "npx tsc --noEmit && npx vitest run"
+    echo "== server: typecheck + vitest (engine contract + cross-device) =="
+    run /app/web/server "npx tsc --noEmit && npx vitest run"
+    echo "== engine: upstream busted suite (proves src/ untouched) =="
+    docker run --rm -e HOME=/tmp -v "$(cd .. && pwd)":/workdir:ro -w /workdir \
+      ghcr.io/pathofbuildingcommunity/pathofbuilding-tests:latest busted --lua=luajit || true
+    ;;
+  *)
+    echo "usage: web/run.sh [up|dev|down|logs|test]" >&2
+    exit 1
+    ;;
+esac
