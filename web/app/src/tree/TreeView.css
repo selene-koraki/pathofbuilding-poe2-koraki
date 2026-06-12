@@ -1,8 +1,15 @@
 .tree-view {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 220px);
+  /* dvh tracks the *visible* viewport on mobile (accounts for browser chrome). */
+  height: calc(100dvh - 220px);
   min-height: 480px;
+}
+@media (max-width: 760px) {
+  .tree-view {
+    height: calc(100dvh - 168px);
+    min-height: 340px;
+  }
 }
 .tree-toolbar {
   display: flex;

@@ -103,6 +103,14 @@
 .pob-select {
   cursor: pointer;
 }
+/* Native option popups: force dark bg + light text so the list is readable on
+   mobile/dark-mode browsers (otherwise light text renders on a white popup). */
+.pob-select option,
+.pob-input option,
+.pob-select optgroup {
+  background: var(--bg-2);
+  color: var(--text);
+}
 
 .pob-check {
   display: inline-flex;

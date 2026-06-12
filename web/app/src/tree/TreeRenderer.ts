@@ -250,42 +250,95 @@ export class TreeRenderer {
     let rafPending = false;
     let lastMove = { x: 0, y: 0 };
 
-    canvas.addEventListener('wheel', (e) => {
-      e.preventDefault();
-      const factor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
-      const before = this.toWorld(e.offsetX, e.offsetY);
+    // Canvas-relative coords (reliable for mouse AND touch; offsetX/Y is buggy for
+    // touch pointer events on some mobile browsers).
+    const at = (e: { clientX: number; clientY: number }) => {
+      const r = canvas.getBoundingClientRect();
+      return { x: e.clientX - r.left, y: e.clientY - r.top };
+    };
+    // Zoom keeping the world point under (sx,sy) fixed.
+    const zoomAround = (sx: number, sy: number, factor: number) => {
+      const before = this.toWorld(sx, sy);
       this.scale = Math.max(0.03, Math.min(2, this.scale * factor));
       this.world.scale.set(this.scale);
-      this.world.position.set(e.offsetX - before.x * this.scale, e.offsetY - before.y * this.scale);
+      this.world.position.set(sx - before.x * this.scale, sy - before.y * this.scale);
+    };
+
+    canvas.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const p = at(e);
+      zoomAround(p.x, p.y, e.deltaY < 0 ? 1.15 : 1 / 1.15);
     }, { passive: false });
 
+    // Unified pointer handling: 1 pointer = pan + tap-to-allocate, 2 = pinch-zoom.
+    const pointers = new Map<number, { x: number; y: number }>();
+    let pinchDist = 0;
+    let pinching = false;
+    let downAt = { x: 0, y: 0 };
+    let movedTotal = 0;
+
     canvas.addEventListener('pointerdown', (e) => {
-      this.dragging = true;
-      this.last = { x: e.offsetX, y: e.offsetY };
-      (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+      canvas.setPointerCapture?.(e.pointerId);
+      const p = at(e);
+      pointers.set(e.pointerId, p);
+      if (pointers.size === 1) {
+        this.dragging = true;
+        this.last = p;
+        downAt = p;
+        movedTotal = 0;
+        pinching = false;
+      } else if (pointers.size === 2) {
+        this.dragging = false;
+        pinching = true;
+        const [a, b] = [...pointers.values()];
+        pinchDist = Math.hypot(a.x - b.x, a.y - b.y) || 1;
+      }
     });
-    canvas.addEventListener('pointerup', (e) => {
-      this.dragging = false;
-      const moved = Math.abs(e.offsetX - this.last.x) + Math.abs(e.offsetY - this.last.y);
-      if (moved < 4) {
-        const w = this.toWorld(e.offsetX, e.offsetY);
+
+    const endPointer = (e: PointerEvent) => {
+      const wasTap = pointers.size === 1 && !pinching && movedTotal < 6;
+      pointers.delete(e.pointerId);
+      canvas.releasePointerCapture?.(e.pointerId);
+      if (pointers.size < 2) pinching = false;
+      if (pointers.size === 1) {
+        // one finger remains after a pinch → resume panning from it
+        this.dragging = true;
+        this.last = [...pointers.values()][0];
+      } else if (pointers.size === 0) {
+        this.dragging = false;
+      }
+      if (wasTap) {
+        const w = this.toWorld(downAt.x, downAt.y);
         const n = this.nearest(w.x, w.y);
         if (n && radius(n) > 0 && n.type !== 'ClassStart') {
           this.cb.onToggle(n.id, this.allocated.has(n.id));
         }
       }
-    });
+    };
+    canvas.addEventListener('pointerup', endPointer);
+    canvas.addEventListener('pointercancel', endPointer);
+
     canvas.addEventListener('pointermove', (e) => {
       this.shift = e.shiftKey;
-      lastMove = { x: e.offsetX, y: e.offsetY };
-      if (this.dragging) {
-        this.world.position.set(
-          this.world.x + (e.offsetX - this.last.x),
-          this.world.y + (e.offsetY - this.last.y),
-        );
-        this.last = { x: e.offsetX, y: e.offsetY };
+      const p = at(e);
+      if (pointers.has(e.pointerId)) pointers.set(e.pointerId, p);
+
+      if (pinching && pointers.size >= 2) {
+        const [a, b] = [...pointers.values()];
+        const dist = Math.hypot(a.x - b.x, a.y - b.y) || 1;
+        zoomAround((a.x + b.x) / 2, (a.y + b.y) / 2, dist / pinchDist);
+        pinchDist = dist;
         return;
       }
+
+      if (this.dragging && pointers.has(e.pointerId)) {
+        movedTotal += Math.abs(p.x - this.last.x) + Math.abs(p.y - this.last.y);
+        this.world.position.set(this.world.x + (p.x - this.last.x), this.world.y + (p.y - this.last.y));
+        this.last = p;
+        return;
+      }
+
+      lastMove = p;
       if (rafPending) return;
       rafPending = true;
       requestAnimationFrame(() => {

@@ -4,6 +4,7 @@
  * One file re-themes everything — the thing the desktop UI fatally lacks. */
 
 :root {
+  color-scheme: dark; /* native <select> popups, scrollbars & pickers render dark → option text stays readable on mobile */
   /* surfaces */
   --bg: #07070a;
   --bg-2: #0c0b0e;

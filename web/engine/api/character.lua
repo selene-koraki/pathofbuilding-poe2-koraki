@@ -16,7 +16,9 @@ function M.getClasses(K)
 	for _, c in ipairs(build.controls.classDrop.list or {}) do
 		local asc = {}
 		for _, a in ipairs(c.ascendancies or {}) do
-			asc[#asc + 1] = { ascendClassId = a.ascendClassId, name = a.name }
+			-- classDrop entries store the display name under `label` (see
+			-- Build.lua:UpdateClassDropdowns), same as classes do below.
+			asc[#asc + 1] = { ascendClassId = a.ascendClassId, name = a.label }
 		end
 		classes[#classes + 1] = { classId = c.classId, name = c.label, ascendancies = asc }
 	end

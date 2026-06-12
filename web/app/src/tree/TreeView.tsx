@@ -107,7 +107,7 @@ export function TreeView() {
         >
           {allocMode === 0 ? 'Normal' : allocMode === 1 ? 'Weapon Set I' : 'Weapon Set II'}
         </Button>
-        <span className="tree-hint">click to allocate · shift-hover to preview path · scroll to zoom</span>
+        <span className="tree-hint">tap/click to allocate · drag to pan · pinch or scroll to zoom · shift-hover previews path</span>
       </div>
       <div className="tree-canvas-wrap" onMouseMove={(e) => setMouse({ x: e.clientX, y: e.clientY })}>
         {!ready && <Spinner label="loading tree…" />}

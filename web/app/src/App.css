@@ -2,6 +2,7 @@
   min-height: 100%;
   display: flex;
   flex-direction: column;
+  overflow-x: hidden; /* guard against any stray child forcing horizontal scroll on mobile */
 }
 
 .topbar {
@@ -56,6 +57,20 @@
 @media (max-width: 760px) {
   .layout {
     grid-template-columns: 1fr;
+    padding: 12px;
+    gap: 12px;
+  }
+  .topbar {
+    padding: 14px 12px 12px;
+  }
+  /* don't overlap the centered title on narrow screens */
+  .topbar-status {
+    position: static;
+    justify-content: center;
+    margin-top: 10px;
+  }
+  .topbar h1 {
+    font-size: var(--fs-xl);
   }
 }
 
