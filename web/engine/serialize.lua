@@ -65,6 +65,46 @@ function M.meta(build)
 	return m
 end
 
+-- Current config values (serializable scalars) + the set of vars the desktop
+-- would currently show (conditions met) so the UI hides situational options.
+function M.config(build)
+	local input = {}
+	for k, v in pairs(build.configTab.input or {}) do
+		local t = type(v)
+		if t == "string" or t == "number" or t == "boolean" then input[k] = v end
+	end
+	local shown = {}
+	for var, control in pairs(build.configTab.varControls or {}) do
+		local ok, vis = pcall(function() return control:IsShown() end)
+		if ok and vis then shown[#shown + 1] = var end
+	end
+	return { input = input, shown = shown }
+end
+
+-- Socket-group summary for the sidebar header selectors.
+function M.skills(build)
+	local groups = {}
+	for i, group in ipairs(build.skillsTab.socketGroupList or {}) do
+		local label = (group.displayLabel and group.displayLabel:match("%S") and group.displayLabel)
+			or (group.label and group.label:match("%S") and group.label)
+			or ("Group " .. i)
+		local skills = {}
+		for _, active in ipairs(group.displaySkillList or {}) do
+			local ge = active.activeEffect and active.activeEffect.grantedEffect
+			skills[#skills + 1] = (ge and ge.name) or "?"
+		end
+		groups[#groups + 1] = {
+			index = i,
+			label = label,
+			enabled = group.enabled ~= false,
+			includeInFullDPS = group.includeInFullDPS or false,
+			mainActiveSkill = group.mainActiveSkill or 1,
+			skills = skills,
+		}
+	end
+	return { mainSocketGroup = build.mainSocketGroup, groups = groups }
+end
+
 -- The full per-build projection pushed after every mutation.
 function M.state(K)
 	local build = K.build()
@@ -74,6 +114,8 @@ function M.state(K)
 		meta = M.meta(build),
 		sidebar = M.sidebar(build),
 		warnings = M.warnings(build),
+		config = M.config(build),
+		skills = M.skills(build),
 	}
 end
 

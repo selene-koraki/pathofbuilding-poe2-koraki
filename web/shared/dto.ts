@@ -23,6 +23,26 @@ export interface BuildMeta {
   energyShield?: number;
 }
 
+/** Current config values + which option vars the desktop would currently show. */
+export interface ConfigState {
+  input: Record<string, string | number | boolean>;
+  shown: string[];
+}
+
+/** A socket group summarised for the header selectors. */
+export interface SkillGroupSummary {
+  index: number;
+  label: string;
+  enabled: boolean;
+  includeInFullDPS: boolean;
+  mainActiveSkill: number;
+  skills: string[];
+}
+export interface SkillsState {
+  mainSocketGroup: number;
+  groups: SkillGroupSummary[];
+}
+
 /** Full per-build projection pushed after every mutation (the live state). */
 export interface BuildState {
   id: string;
@@ -30,6 +50,8 @@ export interface BuildState {
   meta: BuildMeta;
   sidebar: SidebarRow[];
   warnings: string[];
+  config: ConfigState;
+  skills: SkillsState;
 }
 
 /** A lightweight summary the Build Manager lists (derived from the XML header). */
@@ -51,12 +73,34 @@ export interface PresenceInfo {
   devices: Array<{ id: string; label: string }>;
 }
 
-/** Config option descriptor (Phase 1 fills these from ConfigOptions.lua). */
+/** Config option descriptor, generated from ConfigOptions.lua. */
 export interface ConfigOption {
   var: string;
   label: string;
-  type: 'check' | 'list' | 'count' | 'integer' | 'float' | 'text' | 'section';
+  type: string; // check | list | count | integer | float | text | ...
   list?: Array<{ label: string; val: unknown }>;
   default?: unknown;
   tooltip?: string;
+}
+
+/** One section of the Config tab (e.g. General, Combat, Quest Rewards). */
+export interface ConfigSectionSchema {
+  section: string;
+  col?: number;
+  options: ConfigOption[];
+}
+export interface ConfigSchema {
+  sections: ConfigSectionSchema[];
+}
+
+/** A class + its ascendancies, for the character selectors. */
+export interface ClassInfo {
+  classId: number;
+  name: string;
+  ascendancies: Array<{ ascendClassId: number; name: string }>;
+}
+export interface ClassCatalogue {
+  classes: ClassInfo[];
+  curClassId: number;
+  curAscendClassId: number;
 }

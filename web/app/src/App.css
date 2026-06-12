@@ -59,69 +59,21 @@
   }
 }
 
-.new-build {
-  display: flex;
-  gap: var(--s-2);
-  margin-bottom: var(--s-3);
-}
-.new-build .pob-input {
-  flex: 1;
-  min-width: 0;
-}
+/* Build-list / new-build / card styles live in BuildManager.css. */
 
-.build-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.build-list .pob-btn {
-  width: 100%;
-  text-align: left;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.bl-name {
-  color: inherit;
-}
-.bl-meta {
-  font-size: var(--fs-xs);
-  color: var(--text-muted);
-}
-
-.planner-grid {
+.planner-body {
   display: grid;
   grid-template-columns: 1fr 320px;
   gap: 18px;
   align-items: start;
 }
 @media (max-width: 980px) {
-  .planner-grid {
+  .planner-body {
     grid-template-columns: 1fr;
   }
 }
-
-.char-title {
-  font-family: var(--font-head);
-  font-size: var(--fs-xl);
-  color: var(--gold-bright);
-  letter-spacing: 0.06em;
-}
-.char-sub {
-  color: var(--text-dim);
-  margin: 4px 0 14px;
-  font-size: var(--fs-md);
-}
-.level-row {
-  display: flex;
-  align-items: center;
-  gap: var(--s-3);
-}
-.level-row .pob-input {
-  width: 80px;
+.planner-main {
+  min-width: 0;
 }
 
 .stats-panel {

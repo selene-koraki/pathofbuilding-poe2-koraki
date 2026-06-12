@@ -38,6 +38,13 @@ export function Button({
   );
 }
 
+export function IconButton({
+  className,
+  ...rest
+}: ButtonHTMLAttributes<HTMLButtonElement>) {
+  return <button className={`pob-iconbtn ${className || ''}`} {...rest} />;
+}
+
 export function TextInput({ className, ...rest }: InputHTMLAttributes<HTMLInputElement>) {
   return <input className={`pob-input ${className || ''}`} {...rest} />;
 }
@@ -70,6 +77,17 @@ export function Checkbox({
       <input type="checkbox" {...rest} />
       {label != null && <span>{label}</span>}
     </label>
+  );
+}
+
+export function SearchField({ className, ...rest }: InputHTMLAttributes<HTMLInputElement>) {
+  return (
+    <div className={`pob-search ${className || ''}`}>
+      <span className="pob-search-icon" aria-hidden>
+        ⌕
+      </span>
+      <input type="search" className="pob-input" {...rest} />
+    </div>
   );
 }
 

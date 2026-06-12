@@ -124,7 +124,7 @@ end
 -- Load API domains. Each returns a table of {methodName = function(K, params)}.
 -- The build *folder* (library listing, file I/O) is owned by the Node gateway;
 -- the kernel owns build *state* and computation.
-local DOMAINS = { "build", "character", "config", "calcs", "notes" }
+local DOMAINS = { "build", "character", "config", "calcs", "notes", "skills" }
 for _, d in ipairs(DOMAINS) do
 	local ok, mod = pcall(require, "api." .. d)
 	if ok and type(mod) == "table" then

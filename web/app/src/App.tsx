@@ -1,19 +1,32 @@
-import { useEffect, useState } from 'react';
-import { useStore } from './store/build';
+import { useEffect } from 'react';
+import { useStore, type TabId } from './store/build';
 import { StatPanel } from './components/StatPanel';
-import { ColorText } from './components/ColorText';
-import { Panel, Button, NumberInput, Chip, Spinner, TextInput } from './components/primitives';
+import { BuildManager } from './components/BuildManager';
+import { CharacterPanel } from './components/CharacterPanel';
+import { Tabs } from './components/Tabs';
+import { ConfigTab } from './tabs/ConfigTab';
+import { NotesTab } from './tabs/NotesTab';
+import { Panel, Chip, Spinner } from './components/primitives';
 import './App.css';
 
+const TABS: { id: TabId; label: string }[] = [
+  { id: 'build', label: 'Build' },
+  { id: 'config', label: 'Config' },
+  { id: 'notes', label: 'Notes' },
+];
+
 export default function App() {
-  const { connected, builds, activeId, build, presence, loading } = useStore();
+  const { connected, builds, activeId, build, presence, loading, tab } = useStore();
   const init = useStore((s) => s.init);
   const refreshLibrary = useStore((s) => s.refreshLibrary);
+  const setTab = useStore((s) => s.setTab);
 
   useEffect(() => {
     init();
     void refreshLibrary();
   }, [init, refreshLibrary]);
+
+  const otherDevices = (presence?.devices.length || 1) - 1;
 
   return (
     <div className="app">
@@ -24,8 +37,8 @@ export default function App() {
         <p className="tagline">a planner that looks like the game — computing on the real engine</p>
         <div className="topbar-status">
           <Chip tone={connected ? 'live' : 'warn'}>{connected ? 'synced' : 'reconnecting…'}</Chip>
-          {presence && presence.devices.length > 1 && (
-            <Chip tone="ok">also open on {presence.devices.length - 1} other device(s)</Chip>
+          {otherDevices > 0 && (
+            <Chip tone="ok">also open on {otherDevicesLabel(presence)}</Chip>
           )}
         </div>
       </header>
@@ -35,7 +48,21 @@ export default function App() {
         <main className="planner">
           {!activeId && <Welcome />}
           {activeId && loading && !build && <Spinner label="loading build…" />}
-          {activeId && build && <Planner />}
+          {activeId && build && (
+            <>
+              <Tabs tabs={TABS} active={tab} onSelect={setTab} />
+              <div className="planner-body">
+                <div className="planner-main">
+                  {tab === 'build' && <CharacterPanel />}
+                  {tab === 'config' && <ConfigTab />}
+                  {tab === 'notes' && <NotesTab />}
+                </div>
+                <Panel title="Stats" className="stats-panel">
+                  <StatPanel rows={build.sidebar} warnings={build.warnings} />
+                </Panel>
+              </div>
+            </>
+          )}
         </main>
       </div>
 
@@ -46,6 +73,19 @@ export default function App() {
   );
 }
 
+// Label another device viewing the same build (exclude self from presence).
+function otherDevicesLabel(presence: ReturnType<typeof useStore.getState>['presence']): string {
+  if (!presence) return 'another device';
+  let selfId = '';
+  try {
+    selfId = localStorage.getItem('pob-device-id') || '';
+  } catch {
+    /* ignore */
+  }
+  const other = presence.devices.find((d) => d.id !== selfId);
+  return other?.label || 'another device';
+}
+
 function Welcome() {
   return (
     <Panel title="Welcome">
@@ -54,103 +94,5 @@ function Welcome() {
         it stays in lockstep.
       </p>
     </Panel>
-  );
-}
-
-function BuildManager() {
-  const { builds, activeId } = useStore();
-  const openBuild = useStore((s) => s.openBuild);
-  const newBuild = useStore((s) => s.newBuild);
-  const [name, setName] = useState('');
-
-  return (
-    <aside className="sidebar">
-      <Panel title="Build Manager">
-        <form
-          className="new-build"
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (name.trim()) {
-              void newBuild(name.trim());
-              setName('');
-            }
-          }}
-        >
-          <TextInput
-            placeholder="New build name…"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            aria-label="new build name"
-          />
-          <Button variant="primary" type="submit">
-            +
-          </Button>
-        </form>
-        <ul className="build-list" role="list">
-          {builds.map((b) => (
-            <li key={b.id}>
-              <Button
-                active={b.id === activeId}
-                onClick={() => void openBuild(b.id)}
-                data-build-id={b.id}
-              >
-                <span className="bl-name">
-                  {b.favorite ? '★ ' : ''}
-                  {b.name}
-                </span>
-                <span className="bl-meta">
-                  {b.className || '—'}
-                  {b.level ? ` · lvl ${b.level}` : ''}
-                </span>
-              </Button>
-            </li>
-          ))}
-          {builds.length === 0 && <li className="muted">no builds yet</li>}
-        </ul>
-      </Panel>
-    </aside>
-  );
-}
-
-function Planner() {
-  const build = useStore((s) => s.build)!;
-  const command = useStore((s) => s.command);
-  const [levelDraft, setLevelDraft] = useState<number | null>(null);
-  const level = levelDraft ?? build.meta.level ?? 1;
-
-  return (
-    <div className="planner-grid">
-      <Panel title="Character" className="char-panel">
-        <div className="char-title">
-          <ColorText
-            text={`${build.meta.className || '—'}${
-              build.meta.ascendancy && build.meta.ascendancy !== 'None'
-                ? ' · ' + build.meta.ascendancy
-                : ''
-            }`}
-          />
-        </div>
-        <div className="char-sub">{build.name}</div>
-        <label className="level-row">
-          <span>Level</span>
-          <NumberInput
-            min={1}
-            max={100}
-            value={level}
-            onChange={(e) => setLevelDraft(Number(e.target.value))}
-            onBlur={() => {
-              if (levelDraft != null && levelDraft !== build.meta.level) {
-                void command('character.setLevel', { level: levelDraft });
-              }
-            }}
-            aria-label="character level"
-          />
-        </label>
-      </Panel>
-
-      <Panel title="Stats" className="stats-panel">
-        <StatPanel rows={build.sidebar} warnings={build.warnings} />
-      </Panel>
-    </div>
   );
 }

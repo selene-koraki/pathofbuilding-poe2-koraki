@@ -7,6 +7,26 @@ function M.getMeta(K)
 	return serialize.meta(K.build())
 end
 
+-- The class + ascendancy catalogue for the current tree version, exactly as the
+-- desktop class/ascendancy dropdowns present it.
+function M.getClasses(K)
+	local build = K.build()
+	build:UpdateClassDropdowns()
+	local classes = {}
+	for _, c in ipairs(build.controls.classDrop.list or {}) do
+		local asc = {}
+		for _, a in ipairs(c.ascendancies or {}) do
+			asc[#asc + 1] = { ascendClassId = a.ascendClassId, name = a.name }
+		end
+		classes[#classes + 1] = { classId = c.classId, name = c.label, ascendancies = asc }
+	end
+	return {
+		classes = classes,
+		curClassId = build.spec.curClassId,
+		curAscendClassId = build.spec.curAscendClassId,
+	}
+end
+
 -- params: { level }
 function M.setLevel(K, params)
 	local build = K.build()
