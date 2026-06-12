@@ -151,6 +151,25 @@ function M.items(build)
 	return { slots = slots, activeSetId = itemsTab.activeItemSetId }
 end
 
+-- Passive tree allocation state (geometry is fetched once via tree.getData).
+function M.tree(build)
+	local s = build.spec
+	local allocated = {}
+	for id in pairs(s.allocNodes or {}) do allocated[#allocated + 1] = id end
+	local mastery = {}
+	for nodeId, effect in pairs(s.masterySelections or {}) do mastery[tostring(nodeId)] = effect end
+	local used, asc, secAsc, sockets, ws1, ws2 = s:CountAllocNodes()
+	return {
+		treeVersion = s.treeVersion,
+		classId = s.curClassId,
+		ascendClassId = s.curAscendClassId,
+		allocMode = s.allocMode or 0,
+		allocated = allocated,
+		masterySelections = mastery,
+		points = { used = used, ascendancy = asc, secondaryAscendancy = secAsc, sockets = sockets, weaponSet1 = ws1, weaponSet2 = ws2 },
+	}
+end
+
 -- The full per-build projection pushed after every mutation.
 function M.state(K)
 	local build = K.build()
@@ -163,6 +182,7 @@ function M.state(K)
 		config = M.config(build),
 		skills = M.skills(build),
 		items = M.items(build),
+		tree = M.tree(build),
 	}
 end
 

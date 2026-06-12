@@ -13,9 +13,10 @@ import type {
   UniqueSummary,
   ItemDetail,
   ItemSetInfo,
+  TreeData,
 } from '../../../shared/dto';
 
-export type TabId = 'build' | 'skills' | 'items' | 'calcs' | 'config' | 'notes';
+export type TabId = 'build' | 'tree' | 'skills' | 'items' | 'calcs' | 'config' | 'notes';
 
 interface AppState {
   connected: boolean;
@@ -76,6 +77,17 @@ interface AppState {
     steps: Array<{ method: string; params?: Record<string, unknown> }>,
     stats?: string[],
   ) => Promise<Array<{ stat: string; before: number; after: number; delta: number }>>;
+  // Tree
+  getTreeData: () => Promise<TreeData>;
+  allocNode: (id: number) => Promise<void>;
+  deallocNode: (id: number) => Promise<void>;
+  previewPath: (id: number) => Promise<{ path: number[]; cost: number }>;
+  getTreeNode: (id: number) => Promise<{ id: number; name: string; type: string; stats: string[]; alloc: boolean }>;
+  searchTree: (q: string) => Promise<number[]>;
+  treePower: () => Promise<{ power: Record<string, { offence: number; defence: number }>; maxOffence: number; maxDefence: number }>;
+  listSpecs: () => Promise<{ specs: Array<{ index: number; title: string; version: string }>; active: number }>;
+  selectSpec: (index: number) => Promise<void>;
+  setAllocMode: (mode: number) => Promise<void>;
 }
 
 export interface BreakdownDetail {
@@ -303,5 +315,43 @@ export const useStore = create<AppState>((set, get) => ({
       deltas: Array<{ stat: string; before: number; after: number; delta: number }>;
     }>('calcs.compare', { buildId: get().activeId, steps, stats });
     return res.deltas;
+  },
+
+  getTreeData: async () => {
+    return client.request<TreeData>('tree.getData', { buildId: get().activeId });
+  },
+  allocNode: async (id) => {
+    await get().command('tree.allocNode', { id });
+  },
+  deallocNode: async (id) => {
+    await get().command('tree.deallocNode', { id });
+  },
+  previewPath: async (id) => {
+    return client.request<{ path: number[]; cost: number }>('tree.previewPath', {
+      buildId: get().activeId,
+      id,
+    });
+  },
+  getTreeNode: async (id) => {
+    return client.request('tree.getNode', { buildId: get().activeId, id });
+  },
+  searchTree: async (q) => {
+    const res = await client.request<{ ids: number[] }>('tree.search', {
+      buildId: get().activeId,
+      q,
+    });
+    return res.ids;
+  },
+  treePower: async () => {
+    return client.request('tree.power', { buildId: get().activeId });
+  },
+  listSpecs: async () => {
+    return client.request('tree.listSpecs', { buildId: get().activeId });
+  },
+  selectSpec: async (index) => {
+    await get().command('tree.selectSpec', { index });
+  },
+  setAllocMode: async (mode) => {
+    await get().command('tree.setAllocMode', { mode });
   },
 }));

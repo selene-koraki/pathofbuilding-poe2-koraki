@@ -5,6 +5,7 @@ import { BuildManager } from './components/BuildManager';
 import { CharacterPanel } from './components/CharacterPanel';
 import { Tabs } from './components/Tabs';
 import { ConfigTab } from './tabs/ConfigTab';
+import { TreeTab } from './tabs/TreeTab';
 import { SkillsTab } from './tabs/SkillsTab';
 import { ItemsTab } from './tabs/ItemsTab';
 import { CalcsTab } from './tabs/CalcsTab';
@@ -14,6 +15,7 @@ import './App.css';
 
 const TABS: { id: TabId; label: string }[] = [
   { id: 'build', label: 'Build' },
+  { id: 'tree', label: 'Tree' },
   { id: 'skills', label: 'Skills' },
   { id: 'items', label: 'Items' },
   { id: 'calcs', label: 'Calcs' },
@@ -57,19 +59,23 @@ export default function App() {
           {activeId && build && (
             <>
               <Tabs tabs={TABS} active={tab} onSelect={setTab} />
-              <div className="planner-body">
-                <div className="planner-main">
-                  {tab === 'build' && <CharacterPanel />}
-                  {tab === 'skills' && <SkillsTab />}
-                  {tab === 'items' && <ItemsTab />}
-                  {tab === 'calcs' && <CalcsTab />}
-                  {tab === 'config' && <ConfigTab />}
-                  {tab === 'notes' && <NotesTab />}
+              {tab === 'tree' ? (
+                <TreeTab />
+              ) : (
+                <div className="planner-body">
+                  <div className="planner-main">
+                    {tab === 'build' && <CharacterPanel />}
+                    {tab === 'skills' && <SkillsTab />}
+                    {tab === 'items' && <ItemsTab />}
+                    {tab === 'calcs' && <CalcsTab />}
+                    {tab === 'config' && <ConfigTab />}
+                    {tab === 'notes' && <NotesTab />}
+                  </div>
+                  <Panel title="Stats" className="stats-panel">
+                    <StatPanel rows={build.sidebar} warnings={build.warnings} />
+                  </Panel>
                 </div>
-                <Panel title="Stats" className="stats-panel">
-                  <StatPanel rows={build.sidebar} warnings={build.warnings} />
-                </Panel>
-              </div>
+              )}
             </>
           )}
         </main>

@@ -103,6 +103,25 @@ export interface ItemSetInfo {
   active: boolean;
 }
 
+/** Passive-tree allocation state (geometry fetched once via tree.getData). */
+export interface TreePoints {
+  used: number;
+  ascendancy: number;
+  secondaryAscendancy: number;
+  sockets: number;
+  weaponSet1: number;
+  weaponSet2: number;
+}
+export interface TreeState {
+  treeVersion: string;
+  classId: number;
+  ascendClassId: number;
+  allocMode: number;
+  allocated: number[];
+  masterySelections: Record<string, number>;
+  points: TreePoints;
+}
+
 /** Full per-build projection pushed after every mutation (the live state). */
 export interface BuildState {
   id: string;
@@ -113,6 +132,27 @@ export interface BuildState {
   config: ConfigState;
   skills: SkillsState;
   items: ItemsState;
+  tree: TreeState;
+}
+
+/** Tree geometry (one-time fetch, cached client-side). */
+export interface TreeNode {
+  id: number;
+  x: number;
+  y: number;
+  type: string;
+  name?: string;
+  ascendancy?: string;
+  isMastery?: boolean;
+  group?: number;
+  orbit?: number;
+  conns: number[];
+}
+export interface TreeData {
+  version: string;
+  scaleImage: number;
+  nodes: TreeNode[];
+  groups: Array<{ id: number; x: number; y: number }>;
 }
 
 /** A lightweight summary the Build Manager lists (derived from the XML header). */

@@ -141,6 +141,18 @@ SKILL_SETUPS.push({
   ],
 });
 
+// Tree scenario — allocate a notable several hops from the class start (the
+// engine auto-fills the path), proving passive-tree allocation stat parity.
+SKILL_SETUPS.push({
+  id: 'tree-witch-rawpower',
+  steps: [
+    { method: 'character.setClass', params: { classId: 7 } },
+    { method: 'character.setLevel', params: { level: 90 } },
+    { method: 'tree.allocNode', params: { id: 4739 } }, // Spell Damage (adjacent)
+    { method: 'tree.allocNode', params: { id: 51184 } }, // Raw Power notable (path auto-filled)
+  ],
+});
+
 for (const s of SKILL_SETUPS) {
   SCENARIOS.push({ id: s.id, name: s.id, steps: s.steps });
 }
