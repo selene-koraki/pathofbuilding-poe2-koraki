@@ -156,10 +156,39 @@ local function emitEvent(name, data)
 end
 K.event = emitEvent
 
+-- Global undo/redo journal: snapshot the build XML before each mutating command
+-- so any mutation (tree/skills/items/config/...) can be reverted uniformly.
+K.undoStack = {}
+K.redoStack = {}
+local UNDO_MAX = 60
+-- Methods that never mutate the resident build (no snapshot, no redo-clear).
+local NO_SNAPSHOT = {
+	["build.load"] = true, ["build.new"] = true, ["build.save"] = true,
+	["build.getState"] = true, ["build.exportCode"] = true, ["build.undo"] = true,
+	["build.redo"] = true, ["calcs.getSidebar"] = true, ["calcs.getStat"] = true,
+	["calcs.getOutput"] = true, ["calcs.getBreakdown"] = true, ["calcs.compare"] = true,
+	["config.get"] = true, ["config.getSchema"] = true, ["config.getShown"] = true,
+	["notes.get"] = true, ["character.getMeta"] = true, ["character.getClasses"] = true,
+	["skills.listGroups"] = true, ["skills.searchGems"] = true,
+	["items.getSlots"] = true, ["items.getItem"] = true, ["items.searchUniques"] = true,
+	["items.listSets"] = true, ["tree.getData"] = true, ["tree.getNode"] = true,
+	["tree.getAllocated"] = true, ["tree.previewPath"] = true, ["tree.search"] = true,
+	["tree.power"] = true, ["tree.getMasteryEffects"] = true, ["tree.listSpecs"] = true,
+}
+
 local function dispatch(req)
 	local fn = methods[req.method]
 	if not fn then
 		return { id = req.id, ok = false, error = "unknown method: " .. tostring(req.method) }
+	end
+	-- Snapshot pre-mutation state for undo (only when a build is resident).
+	if K.loadedId and not NO_SNAPSHOT[req.method] then
+		local ok, xml = pcall(K.toXML)
+		if ok and xml then
+			K.undoStack[#K.undoStack + 1] = xml
+			if #K.undoStack > UNDO_MAX then table.remove(K.undoStack, 1) end
+			K.redoStack = {}
+		end
 	end
 	local ok, result = pcall(fn, K, req.params or {})
 	if not ok then

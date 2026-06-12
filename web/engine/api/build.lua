@@ -7,6 +7,7 @@ local M = {}
 -- params: { id, xml, name }
 function M.load(K, params)
 	K.loadXML(params.id, params.xml or "", params.name)
+	K.undoStack, K.redoStack = {}, {} -- undo history is per-resident-build
 	K.recompute()
 	return serialize.state(K)
 end
@@ -14,6 +15,7 @@ end
 -- Start a fresh default build. params: { id, name }
 function M.new(K, params)
 	K.loadNew(params.id, params.name)
+	K.undoStack, K.redoStack = {}, {}
 	K.recompute()
 	return serialize.state(K)
 end
@@ -45,6 +47,35 @@ function M.importCode(K, params)
 	K.loadXML(params.id, xml, params.name)
 	K.recompute()
 	return serialize.state(K)
+end
+
+-- Global undo: revert to the snapshot taken before the last mutation.
+function M.undo(K)
+	if #K.undoStack == 0 then
+		return serialize.state(K)
+	end
+	K.redoStack[#K.redoStack + 1] = K.toXML()
+	local xml = table.remove(K.undoStack)
+	K.loadXML(K.loadedId, xml, K.loadedName)
+	K.recompute()
+	return serialize.state(K)
+end
+
+-- Redo: re-apply the most recently undone state.
+function M.redo(K)
+	if #K.redoStack == 0 then
+		return serialize.state(K)
+	end
+	K.undoStack[#K.undoStack + 1] = K.toXML()
+	local xml = table.remove(K.redoStack)
+	K.loadXML(K.loadedId, xml, K.loadedName)
+	K.recompute()
+	return serialize.state(K)
+end
+
+-- Whether undo/redo are available (for UI affordances).
+function M.undoState(K)
+	return { canUndo = #K.undoStack > 0, canRedo = #K.redoStack > 0 }
 end
 
 return M

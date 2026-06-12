@@ -93,3 +93,31 @@
   color: var(--text-muted);
   font-style: italic;
 }
+
+/* export build-code modal */
+.export-modal {
+  width: min(560px, 92vw);
+  background: var(--bg-2);
+  border: 1px solid var(--bronze-line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--elev-1);
+  padding: var(--s-4);
+}
+.export-modal h3 {
+  margin: 0 0 var(--s-2);
+  font-family: var(--font-head);
+  color: var(--gold-bright);
+  letter-spacing: 0.06em;
+}
+.export-modal textarea {
+  width: 100%;
+  resize: vertical;
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  margin: var(--s-2) 0;
+  word-break: break-all;
+}
+.export-actions {
+  display: flex;
+  gap: var(--s-2);
+}

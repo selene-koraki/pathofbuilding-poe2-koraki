@@ -88,6 +88,10 @@ interface AppState {
   listSpecs: () => Promise<{ specs: Array<{ index: number; title: string; version: string }>; active: number }>;
   selectSpec: (index: number) => Promise<void>;
   setAllocMode: (mode: number) => Promise<void>;
+  // Import/export + undo/redo
+  undo: () => Promise<void>;
+  redo: () => Promise<void>;
+  exportCode: () => Promise<string>;
 }
 
 export interface BreakdownDetail {
@@ -353,5 +357,18 @@ export const useStore = create<AppState>((set, get) => ({
   },
   setAllocMode: async (mode) => {
     await get().command('tree.setAllocMode', { mode });
+  },
+
+  undo: async () => {
+    await get().command('build.undo');
+  },
+  redo: async () => {
+    await get().command('build.redo');
+  },
+  exportCode: async () => {
+    const res = await client.request<{ code: string }>('build.exportCode', {
+      buildId: get().activeId,
+    });
+    return res.code;
   },
 }));

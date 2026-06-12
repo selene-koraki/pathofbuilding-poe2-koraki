@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useStore, type TabId } from './store/build';
 import { StatPanel } from './components/StatPanel';
 import { BuildManager } from './components/BuildManager';
@@ -10,7 +10,8 @@ import { SkillsTab } from './tabs/SkillsTab';
 import { ItemsTab } from './tabs/ItemsTab';
 import { CalcsTab } from './tabs/CalcsTab';
 import { NotesTab } from './tabs/NotesTab';
-import { Panel, Chip, Spinner } from './components/primitives';
+import { Panel, Chip, Spinner, Button, IconButton } from './components/primitives';
+import { CommandPalette } from './components/CommandPalette';
 import './App.css';
 
 const TABS: { id: TabId; label: string }[] = [
@@ -28,11 +29,39 @@ export default function App() {
   const init = useStore((s) => s.init);
   const refreshLibrary = useStore((s) => s.refreshLibrary);
   const setTab = useStore((s) => s.setTab);
+  const undo = useStore((s) => s.undo);
+  const redo = useStore((s) => s.redo);
+  const exportCode = useStore((s) => s.exportCode);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const [exported, setExported] = useState<string | null>(null);
 
   useEffect(() => {
     init();
     void refreshLibrary();
   }, [init, refreshLibrary]);
+
+  // Global keyboard shortcuts.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const mod = e.ctrlKey || e.metaKey;
+      if (mod && e.key === 'k') {
+        e.preventDefault();
+        setPaletteOpen((o) => !o);
+      } else if (mod && e.key.toLowerCase() === 'z' && !e.shiftKey) {
+        if (useStore.getState().activeId) {
+          e.preventDefault();
+          void undo();
+        }
+      } else if (mod && (e.key.toLowerCase() === 'y' || (e.key.toLowerCase() === 'z' && e.shiftKey))) {
+        if (useStore.getState().activeId) {
+          e.preventDefault();
+          void redo();
+        }
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [undo, redo]);
 
   const otherDevices = (presence?.devices.length || 1) - 1;
 
@@ -44,12 +73,50 @@ export default function App() {
         </h1>
         <p className="tagline">a planner that looks like the game — computing on the real engine</p>
         <div className="topbar-status">
-          <Chip tone={connected ? 'live' : 'warn'}>{connected ? 'synced' : 'reconnecting…'}</Chip>
-          {otherDevices > 0 && (
-            <Chip tone="ok">also open on {otherDevicesLabel(presence)}</Chip>
+          {activeId && (
+            <>
+              <IconButton title="Undo (Ctrl-Z)" onClick={() => void undo()}>
+                ↶
+              </IconButton>
+              <IconButton title="Redo (Ctrl-Y)" onClick={() => void redo()}>
+                ↷
+              </IconButton>
+              <Button variant="ghost" onClick={() => void exportCode().then(setExported)} title="Export build code">
+                Export
+              </Button>
+            </>
           )}
+          <Button variant="ghost" onClick={() => setPaletteOpen(true)} title="Command palette (Ctrl-K)">
+            ⌘K
+          </Button>
+          <Chip tone={connected ? 'live' : 'warn'}>{connected ? 'synced' : 'reconnecting…'}</Chip>
+          {otherDevices > 0 && <Chip tone="ok">also open on {otherDevicesLabel(presence)}</Chip>}
         </div>
       </header>
+
+      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
+      {exported != null && (
+        <div className="cmdk-overlay" onMouseDown={() => setExported(null)}>
+          <div className="export-modal" onMouseDown={(e) => e.stopPropagation()}>
+            <h3>Build code</h3>
+            <p className="muted">Paste this into desktop PoB or another device to import the build.</p>
+            <textarea className="pob-input" readOnly value={exported} rows={6} onFocus={(e) => e.currentTarget.select()} />
+            <div className="export-actions">
+              <Button
+                variant="primary"
+                onClick={() => {
+                  void navigator.clipboard?.writeText(exported);
+                }}
+              >
+                Copy
+              </Button>
+              <Button variant="ghost" onClick={() => setExported(null)}>
+                Close
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="layout">
         <BuildManager />
