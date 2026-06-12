@@ -205,26 +205,42 @@ toasts (engine errors surfaced, never swallowed), undo/redo, autosave indicator.
 | Sidebar: class/asc/level, main group/skill, stat set | ✅ | |
 | Sidebar: full stat panel (offence + defence) | ✅ | Reuses `build.controls.statBox.list`. |
 | Config tab: toggles/conditions/enemy/map mods | ✅ | Generated from `ConfigOptions` schema. |
+| **Quest rewards** (PoE2 campaign buffs: Candlemass, King In The Mists, etc.) | ✅ | Replaces PoE1 pantheon/bandits. Generated into Config; grants passive/weapon-set points; imported from character. |
+| **Custom modifiers** (arbitrary mod box) | ✅ | Part of Config. |
 | Skills: socket groups, gems, supports, level/quality/enable | ✅ | |
+| **Minions**: minion skills, minion stat panel, spectre/beast library | ✅ | Headline PoB feature. |
+| **Full DPS** toggle + per-group "include in Full DPS" | ✅ | Multi-skill DPS aggregation. |
 | Items: slots, equip/unequip, paste-from-game | ✅ | |
 | Items: unique DB / item DB search | ✅ | |
 | Items: rare templates, mod-roll selection | ✅ | |
 | Items: full crafting (prefix/suffix bench/essence) | ⏳ v2 | Read/equip crafted items works; authoring deferred. |
 | Item sets | ✅ | |
+| **Flasks** (life/mana slots + flask config) | ✅ | |
+| **Charms** (PoE2 belt charms) | ✅ | PoE2-specific. |
+| **Runes / Soul Cores** (item socketables, distinct from gems) | ✅ | PoE2-specific; `TestSocketables` spec. |
+| **Anoints** (amulet oils) | ✅ | |
+| **Enchantments** on items (select/paste) | ✅ | Bench-enchant *authoring* deferred to v2. |
 | Passive tree: view, allocate, search, masteries, ascendancy | ✅ | |
 | Passive tree: jewels (radius/conversion/timeless) | ✅ (basic) | Timeless edge-cases audited in Phase 5. |
 | Passive tree: alternate path tracing (shift-hover) | ✅ | |
-| Tree specs / loadouts; tree versions | ✅ | |
+| Tree: specs & versions | ✅ | |
+| **Weapon set swap** (Set I/II) + weapon-set passive allocations & points | ✅ | PoE2 core; spans tree + items + skills. |
+| **Tree power heatmap** (offence/defence node coloring) | ✅ | Distinct from the Calcs power list. |
+| **Loadouts** (skill/item/config sets within a build) | ✅ | Broader than tree specs; own spec test. |
+| **Import tree/items/skills from tree URL / planner links** | ✅ | Distinct from build codes. |
 | Calcs tab: breakdown sections | ✅ | |
 | Calcs tab: node/item power report & comparison | ✅ | |
 | Import/Export: build codes (paste/generate) | ✅ | `Deflate`/`Inflate` already wired. |
 | Import from PoE account (character) | ⏳ v2 | Needs OAuth + live API. |
 | Trade-site search | ⏳ v2 | |
 | Party / support builds | ⏳ v2 | |
+| Build sets / build-vs-build comparison | ⏳ v2 | Deferred per your call. |
+| Pantheon / Bandits | ➖ N/A | Not in PoE2 — engine keeps legacy fields for old build files only; no UI. Replaced by Quest Rewards (above). |
 | Notes tab | ✅ | |
 | Undo/redo | ✅ | Engine-side `UndoHandler` or command journal. |
 | Save/load, autosave, shared build files | ✅ | |
 | Tooltips (stat, item, gem) | ✅ | Redesigned. |
+| App settings (number formatting / display prefs) | ✅ minimal | Build-folder/port are server config. |
 
 **"Parity" is defined objectively (see §8):** every ✅ row passes its acceptance
 test, and a corpus of sample builds computes **numerically identical** stats in the
@@ -262,8 +278,9 @@ milestone; keep the test suite green; never modify `src/`.
   continuity hardening (reconnect, late-join loads latest autosaved state, presence
   indicator, "synced" chip); character controls (level/class/ascendancy); main
   group/skill/stat-set selectors; **Config tab** auto-generated from `ConfigOptions`
-  (toggles, dropdowns, numbers, conditions, enemy, map mods) with live recompute;
-  optimistic UI + `build.updated` reconcile.
+  (toggles, dropdowns, numbers, conditions, enemy, map mods, **quest-reward campaign
+  buffs**, **custom modifiers**) with live recompute; optimistic UI + `build.updated`
+  reconcile.
 - **DoD:** from a phone and a laptop simultaneously: the library lists all builds and
   reflects create/rename/delete live; **starting/editing a build on one device and
   picking it up on the other shows the latest state with no manual save**; swapping
@@ -273,15 +290,18 @@ milestone; keep the test suite green; never modify `src/`.
 ### Phase 2 — Skills
 - **Deliverables:** socket-group list, add/remove/reorder groups; gem add/remove,
   set level/quality/enabled/count, supports; main-skill selection; paste socket group;
-  drag-drop gems; `GemPill`/`SocketGroup` components; gem search.
+  drag-drop gems; `GemPill`/`SocketGroup` components; gem search; **minions** (minion
+  skills + minion stat panel + spectre/beast library); **Full DPS** toggle &
+  per-group include.
 - **DoD:** building a socket setup from scratch yields the same skill list, DPS, and
   reservations as the desktop app; parity tests pass.
 
 ### Phase 3 — Items
 - **Deliverables:** equipment slots + `equip/unequip`; **paste-from-game** parsing;
   unique/item DB browser with search/filter; rare templates + mod-roll selection;
-  item sets; `ItemTooltip` with full rarity/mod coloring and supported/unsupported
-  signal; (full crafting authoring **deferred to v2** — equipping crafted/loaded items works).
+  item sets; **flasks, charms, runes/soul cores, anoints, enchantments**; `ItemTooltip`
+  with full rarity/mod coloring and supported/unsupported signal; (full crafting *and*
+  bench-enchant authoring **deferred to v2** — equipping crafted/loaded items works).
 - **DoD:** pasting a set of items reproduces desktop stats exactly; DB search returns
   correct uniques; item sets switch correctly; parity tests pass.
 
@@ -296,15 +316,17 @@ milestone; keep the test suite green; never modify `src/`.
 - **Deliverables:** tree-data export → JSON + sprite manifest; **PixiJS renderer**
   (pan/zoom, node states, hover, search highlight, connectors); allocate/deallocate
   synced to engine; **shift-path tracing**; masteries; ascendancy; jewel sockets &
-  radius rings; tree **specs/loadouts** and **versions**; minimap/search.
+  radius rings; **weapon-set passive allocations & swap (Set I/II)**; **power heatmap**
+  (offence/defence node coloring); tree **specs** and **versions**; minimap/search.
 - **DoD:** allocating/deallocating any node changes stats identically to desktop;
   a complex tree (~120 points + jewels + masteries) renders at ≥60 fps on a typical
   laptop and computes identical stats; path tracing matches desktop allocation.
 
 ### Phase 6 — Import/Export, specs, undo/redo, polish
 - **Deliverables:** build-code import/export (round-trips with desktop & PoB sites);
-  tree/skill/item loadout management; **undo/redo** across all mutations; command
-  palette; keyboard shortcut parity; empty/error states; performance pass.
+  tree/skill/item/config **loadout** management; **import from tree/planner URLs**;
+  **app settings** (number formatting / display prefs); **undo/redo** across all
+  mutations; command palette; keyboard shortcut parity; empty/error states; perf pass.
 - **DoD:** a build exported from the web app imports byte-identically into desktop PoB
   (and vice-versa); undo/redo holds across every tab.
 
@@ -487,7 +509,9 @@ Hard rules:
     the §5 matrix passes its acceptance test. Prove it, don't assert it.
 
 Deferred to v2 (do NOT build in v1): trade-site search, party/support play, full
-item crafting authoring, PoE-account import.
+item crafting + bench-enchant authoring, PoE-account import, build-vs-build comparison.
+Not in PoE2 (do NOT build): pantheon, bandits — the campaign-buff role is filled by
+Quest Rewards, which IS in v1.
 
 Work autonomously through all phases. After each phase, post a short status
 (what shipped, DoD result, parity corpus result) and continue. At the end, deliver
