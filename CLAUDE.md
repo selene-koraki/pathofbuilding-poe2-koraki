@@ -33,7 +33,9 @@ busted --lua=luajit spec/System/TestSkills_spec.lua   # a single spec file
 docker compose up                  # tests in the canonical CI container (pinned tool versions)
 ```
 
-Dependencies for the above: `luajit` plus LuaRocks modules `luautf8`, `busted`, and (for `web/`) `luasocket` + `lua-zlib`. `web/run.sh` auto-installs the missing rocks.
+Dependencies for the above: `luajit` plus LuaRocks modules `luautf8`, `busted`. The
+web app (`web/`) needs `lua-zlib` (Deflate/Inflate) + Node 20; it is fully containerised
+(`web/Dockerfile` bundles all of them) and run via `web/run.sh` — no native toolchain.
 
 Notes:
 - `.busted` excludes the `builds` tag by default and sets `helper = HeadlessWrapper.lua`, `directory = src`, `ROOT = ../spec`.
@@ -51,12 +53,35 @@ Notes:
 - See `docs/rundown.md` for a file-by-file tour and `REPO_REVIEW.md` for the architecture deep-dive and Linux-support analysis.
 
 ### Web client (`web/`) — the fork's work
-- `web/server.lua` — boots the engine via `dofile("HeadlessWrapper.lua")`, wires real zlib `Deflate`/`Inflate`, and serves a small localhost HTTP API. Reads/writes the **same plain-XML build files** as the desktop app (bypasses the engine's path logic so files are shared cleanly). Key trick: it serializes the engine's own computed sidebar from `build.controls.statBox.list`, preserving the game's `^`-colour escapes for the browser to map to the PoE2 palette.
-- `web/public/` — browser UI (plain HTML/CSS/JS, PoE2-styled). `GET /api/builds` lists builds; `GET /api/build?name=<name>` loads + computes one.
-- `web/run.sh` — one-command launcher (sets `cwd` to `src/`, `LUA_PATH`, env vars, installs rocks, opens browser).
-- `web/builds/` — build XML files the service reads (a `Sample` is auto-generated if empty); gitignored contents.
+A three-tier web app driving the unmodified engine headlessly (see `web/PLAN.md` for
+the spec, `web/README.md` for orientation, `web/PARITY.md` for the §5 sign-off, and
+`web/DEPLOYMENT.md` to run it). **Everything is containerised** — the host needs only
+Docker; the image bundles Node + LuaJIT + lua-zlib/luautf8.
 
-The current `web/` is a deliberately thin vertical slice (PoC). `web/PLAN.md` is the full roadmap: a React+TS+Vite SPA over a Node gateway that talks JSON-RPC/stdio to the LuaJIT engine kernel, targeting parity with the desktop planner (tree, skills, items, config, calcs, build import/export) while keeping `src/` unmodified.
+- `web/engine/` — **LuaJIT engine kernel**: `kernel.lua` speaks newline-delimited
+  JSON-RPC over stdio (no sockets), boots via `dofile("HeadlessWrapper.lua")`, wires
+  real zlib `Deflate`/`Inflate`, and routes to `api/{build,character,config,calcs,notes,
+  skills,items,tree}.lua` which call the same logic methods the desktop UI/specs use.
+  `serialize.lua` projects engine objects to JSON DTOs (preserving `^`-colour escapes).
+  `print` is rerouted to stderr so stdout stays a clean protocol stream.
+- `web/server/` — **Node/TS gateway**: spawns/supervises the kernel (auto-restart),
+  brokers WebSocket ⇄ JSON-RPC, serves the SPA, and runs **build-keyed shared sessions**
+  (broadcast `build.updated` to all subscribers, debounced autosave to the shared
+  `Builds/` XML, late-join rehydrate) for cross-device continuity.
+- `web/app/` — **React+TS+Vite SPA**: PoE2 design system + tabs (Build/Tree/Skills/
+  Items/Calcs/Config/Notes), Build Manager, PixiJS passive tree, command palette.
+- `web/shared/` — TypeScript RPC + DTO contract (the transport-agnostic seam).
+- `web/parity/` — the numeric-parity corpus + runner (the §8 gate).
+- `web/poc/` — the original Lua HTTP PoC, archived for reference.
+
+Commands (all via Docker):
+```bash
+web/run.sh            # build + start the LAN service (docker compose up -d) on :7632
+web/run.sh dev        # gateway (tsx watch) + Vite HMR
+web/run.sh test       # app Vitest + server Vitest (incl. parity) + upstream busted
+```
+The engine in `src/` stays byte-for-byte identical; engine behaviour changes are made
+from `web/engine` only (override after `dofile("HeadlessWrapper.lua")`).
 
 ## Conventions
 
