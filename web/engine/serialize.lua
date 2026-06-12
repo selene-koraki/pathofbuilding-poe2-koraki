@@ -126,6 +126,31 @@ function M.skills(build)
 	return { mainSocketGroup = build.mainSocketGroup, groups = groups }
 end
 
+-- Equipment slots (main equip slots only; jewel sockets handled by the tree).
+local SLOT_ORDER = {
+	"Weapon 1", "Weapon 2", "Helmet", "Body Armour", "Gloves", "Boots",
+	"Amulet", "Ring 1", "Ring 2", "Ring 3", "Belt",
+	"Flask 1", "Flask 2", "Charm 1", "Charm 2", "Charm 3",
+}
+function M.items(build)
+	local itemsTab = build.itemsTab
+	local slots = {}
+	for _, name in ipairs(SLOT_ORDER) do
+		local sc = itemsTab.slots[name]
+		if sc then
+			local itemId = sc.selItemId or 0
+			local item = itemId ~= 0 and itemsTab.items[itemId] or nil
+			slots[#slots + 1] = {
+				name = name,
+				itemId = itemId,
+				active = sc.active,
+				item = item and { id = item.id, name = item.name, rarity = item.rarity, type = item.base and item.base.type } or nil,
+			}
+		end
+	end
+	return { slots = slots, activeSetId = itemsTab.activeItemSetId }
+end
+
 -- The full per-build projection pushed after every mutation.
 function M.state(K)
 	local build = K.build()
@@ -137,6 +162,7 @@ function M.state(K)
 		warnings = M.warnings(build),
 		config = M.config(build),
 		skills = M.skills(build),
+		items = M.items(build),
 	}
 end
 

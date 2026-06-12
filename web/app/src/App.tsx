@@ -6,6 +6,7 @@ import { CharacterPanel } from './components/CharacterPanel';
 import { Tabs } from './components/Tabs';
 import { ConfigTab } from './tabs/ConfigTab';
 import { SkillsTab } from './tabs/SkillsTab';
+import { ItemsTab } from './tabs/ItemsTab';
 import { NotesTab } from './tabs/NotesTab';
 import { Panel, Chip, Spinner } from './components/primitives';
 import './App.css';
@@ -13,6 +14,7 @@ import './App.css';
 const TABS: { id: TabId; label: string }[] = [
   { id: 'build', label: 'Build' },
   { id: 'skills', label: 'Skills' },
+  { id: 'items', label: 'Items' },
   { id: 'config', label: 'Config' },
   { id: 'notes', label: 'Notes' },
 ];
@@ -57,6 +59,7 @@ export default function App() {
                 <div className="planner-main">
                   {tab === 'build' && <CharacterPanel />}
                   {tab === 'skills' && <SkillsTab />}
+                  {tab === 'items' && <ItemsTab />}
                   {tab === 'config' && <ConfigTab />}
                   {tab === 'notes' && <NotesTab />}
                 </div>

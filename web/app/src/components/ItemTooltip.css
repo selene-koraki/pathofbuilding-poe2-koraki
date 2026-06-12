@@ -1,0 +1,29 @@
+.item-tooltip {
+  background: rgba(6, 5, 8, 0.97);
+  border: 1px solid var(--bronze-line);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  min-width: 240px;
+  max-width: 420px;
+  box-shadow: var(--elev-1);
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+}
+.item-tooltip.r-unique {
+  border-color: var(--unique);
+}
+.item-tooltip.r-rare {
+  border-color: var(--rare);
+}
+.item-tooltip.r-magic {
+  border-color: var(--magic);
+}
+.it-line {
+  white-space: pre-wrap;
+}
+.it-line:first-child {
+  font-family: var(--font-head);
+  letter-spacing: 0.04em;
+  text-align: center;
+  margin-bottom: 4px;
+}

@@ -125,6 +125,22 @@ SKILL_SETUPS.push({
   ],
 });
 
+// Item scenarios — equip uniques + paste a rare, in Full DPS, to pin item stats.
+SKILL_SETUPS.push({
+  id: 'items-unique-belly',
+  steps: [
+    { method: 'character.setClass', params: { classId: 6 } }, // Warrior
+    { method: 'character.setLevel', params: { level: 75 } },
+    { method: 'items.equipUnique', params: { name: 'Belly of the Beast, Explorer Armour' } },
+    {
+      method: 'items.pasteItem',
+      params: {
+        text: 'Rarity: RARE\nDread Coil\nRawhide Belt\n--------\n+45 to maximum Life\n+30% to Cold Resistance\n',
+      },
+    },
+  ],
+});
+
 for (const s of SKILL_SETUPS) {
   SCENARIOS.push({ id: s.id, name: s.id, steps: s.steps });
 }

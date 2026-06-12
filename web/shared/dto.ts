@@ -60,6 +60,49 @@ export interface SkillsState {
   groups: SkillGroupSummary[];
 }
 
+/** A summarised item (for slot cards and lists). */
+export interface ItemSummary {
+  id: number;
+  name: string;
+  rarity: string;
+  type?: string;
+}
+
+/** One equipment slot and what's in it. */
+export interface ItemSlot {
+  name: string;
+  itemId: number;
+  active?: boolean;
+  item?: ItemSummary;
+}
+export interface ItemsState {
+  slots: ItemSlot[];
+  activeSetId: number;
+}
+
+/** Full item detail incl. coloured tooltip lines (engine-authoritative). */
+export interface ItemDetail {
+  id: number;
+  name: string;
+  rarity: string;
+  baseName?: string;
+  type?: string;
+  tooltip: Array<{ size?: number; text: string }>;
+}
+
+export interface UniqueSummary {
+  name: string;
+  rarity: string;
+  baseName?: string;
+  type?: string;
+  slot?: string;
+}
+export interface ItemSetInfo {
+  id: number;
+  title: string;
+  active: boolean;
+}
+
 /** Full per-build projection pushed after every mutation (the live state). */
 export interface BuildState {
   id: string;
@@ -69,6 +112,7 @@ export interface BuildState {
   warnings: string[];
   config: ConfigState;
   skills: SkillsState;
+  items: ItemsState;
 }
 
 /** A lightweight summary the Build Manager lists (derived from the XML header). */

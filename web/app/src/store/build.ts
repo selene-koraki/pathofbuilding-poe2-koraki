@@ -10,9 +10,12 @@ import type {
   PresenceInfo,
   ConfigSchema,
   ClassCatalogue,
+  UniqueSummary,
+  ItemDetail,
+  ItemSetInfo,
 } from '../../../shared/dto';
 
-export type TabId = 'build' | 'skills' | 'config' | 'notes';
+export type TabId = 'build' | 'skills' | 'items' | 'config' | 'notes';
 
 interface AppState {
   connected: boolean;
@@ -56,6 +59,16 @@ interface AppState {
   removeGem: (group: number, index: number) => Promise<void>;
   pasteGroup: (text: string) => Promise<void>;
   searchGems: (q: string) => Promise<Array<{ name: string; support: boolean }>>;
+  // Items
+  pasteItem: (text: string, slot?: string) => Promise<void>;
+  unequip: (slot: string) => Promise<void>;
+  setSlotActive: (slot: string, active: boolean) => Promise<void>;
+  searchUniques: (q: string, slot?: string) => Promise<UniqueSummary[]>;
+  equipUnique: (name: string, slot?: string) => Promise<void>;
+  getItemDetail: (id: number) => Promise<ItemDetail>;
+  itemSets: () => Promise<{ sets: ItemSetInfo[]; activeId: number }>;
+  setActiveSet: (id: number) => Promise<void>;
+  newItemSet: (title: string) => Promise<void>;
 }
 
 export const useStore = create<AppState>((set, get) => ({
@@ -228,5 +241,40 @@ export const useStore = create<AppState>((set, get) => ({
       { buildId: get().activeId, q },
     );
     return res.gems;
+  },
+
+  pasteItem: async (text, slot) => {
+    await get().command('items.pasteItem', { text, slot });
+  },
+  unequip: async (slot) => {
+    await get().command('items.unequip', { slot });
+  },
+  setSlotActive: async (slot, active) => {
+    await get().command('items.setSlotActive', { slot, active });
+  },
+  searchUniques: async (q, slot) => {
+    const res = await client.request<{ uniques: UniqueSummary[] }>('items.searchUniques', {
+      buildId: get().activeId,
+      q,
+      slot,
+    });
+    return res.uniques;
+  },
+  equipUnique: async (name, slot) => {
+    await get().command('items.equipUnique', { name, slot });
+  },
+  getItemDetail: async (id) => {
+    return client.request<ItemDetail>('items.getItem', { buildId: get().activeId, id });
+  },
+  itemSets: async () => {
+    return client.request<{ sets: ItemSetInfo[]; activeId: number }>('items.listSets', {
+      buildId: get().activeId,
+    });
+  },
+  setActiveSet: async (id) => {
+    await get().command('items.setActiveSet', { id });
+  },
+  newItemSet: async (title) => {
+    await client.request('items.newSet', { buildId: get().activeId, title });
   },
 }));
