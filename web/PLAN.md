@@ -490,6 +490,12 @@ continuity per §7B — builds are keyed server-side as shared sessions, so I ca
 build on one device, continue on another, and swap builds on the fly, with live sync
 and autosave to the shared Builds/ folder.
 
+Deployment defaults (override via env): PORT=7632; bind 0.0.0.0 for LAN access;
+POB_BUILD_DIR defaults to ./web/builds (auto-created — the engine generates a Sample
+build so the Build Manager isn't empty on first run). There is no shared desktop
+Builds folder yet; document how to repoint POB_BUILD_DIR at one later. Ship
+`docker compose up -d` plus a `web/run.sh`.
+
 Execute the phases in web/PLAN.md §6 IN ORDER (0→7). For each phase:
   1. Implement its deliverables.
   2. Make its Definition of Done pass, including the numeric-parity harness (§8).
