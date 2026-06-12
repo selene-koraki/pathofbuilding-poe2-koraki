@@ -1,0 +1,25 @@
+# systemd unit for PoB2 Web (Docker Compose deployment).
+# Install:
+#   sudo cp web/deploy/pob2-web.service /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now pob2-web
+# Adjust WorkingDirectory to your checkout path.
+
+[Unit]
+Description=PoB2 Web (Path of Building 2 web planner)
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/opt/pathofbuilding-poe2-koraki
+# Override the port / build folder here if needed:
+Environment=POB_PORT=7632
+# Environment=POB_BUILD_DIR_HOST=/srv/pob-builds
+ExecStart=/usr/bin/docker compose -f web/docker-compose.yml up -d --build
+ExecStop=/usr/bin/docker compose -f web/docker-compose.yml down
+TimeoutStartSec=0
+
+[Install]
+WantedBy=multi-user.target

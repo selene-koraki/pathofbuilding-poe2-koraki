@@ -57,6 +57,9 @@ export default function App() {
           e.preventDefault();
           void redo();
         }
+      } else if (e.key === 'Escape') {
+        setExported(null);
+        setPaletteOpen(false);
       }
     };
     window.addEventListener('keydown', onKey);

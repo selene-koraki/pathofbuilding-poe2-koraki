@@ -87,7 +87,7 @@ for (const cls of CLASSES) {
 // Skill scenarios: a real socket group (active + support) driven through the
 // skills RPCs, in Full DPS, against varied enemies. Exercises gem add/level/
 // quality/enable/main-skill end-to-end and pins skill DPS parity.
-const SKILL_SETUPS: { id: string; steps: RpcCall[] }[] = [
+const SKILL_SETUPS: { id: string; name?: string; steps: RpcCall[] }[] = [
   {
     id: 'fireball-basic',
     steps: [
@@ -153,6 +153,71 @@ SKILL_SETUPS.push({
   ],
 });
 
+// Integrated builds — combine class + tree + skills + items + config in one
+// build, the closest the synthetic corpus gets to "real" builds. Every subsystem
+// participates, so a regression anywhere shows up as a parity diff.
+const INTEGRATED: Scenario[] = [
+  {
+    id: 'integrated-sorc-fireball',
+    name: 'Sorceress Fireball (tree+gem+item+boss)',
+    steps: [
+      { method: 'character.setClass', params: { classId: 7 } },
+      { method: 'character.setLevel', params: { level: 88 } },
+      { method: 'tree.allocNode', params: { id: 4739 } },
+      { method: 'tree.allocNode', params: { id: 51184 } },
+      { method: 'skills.pasteGroup', params: { text: 'Fireball 20/20 1\nFire Penetration II 20/0 1' } },
+      { method: 'skills.setGroupFullDPS', params: { index: 1, include: true } },
+      { method: 'skills.setMainGroup', params: { index: 1 } },
+      { method: 'items.equipUnique', params: { name: 'Belly of the Beast, Explorer Armour' } },
+      { method: 'config.set', params: { var: 'enemyIsBoss', value: 'Boss' } },
+    ],
+  },
+  {
+    id: 'integrated-witch-minion',
+    name: 'Witch Raise Zombie (minion+item+config)',
+    steps: [
+      { method: 'character.setClass', params: { classId: 1 } },
+      { method: 'character.setLevel', params: { level: 82 } },
+      { method: 'skills.pasteGroup', params: { text: 'Raise Zombie 20/0 1' } },
+      { method: 'skills.setMainGroup', params: { index: 1 } },
+      { method: 'skills.setGroupFullDPS', params: { index: 1, include: true } },
+      { method: 'items.equipUnique', params: { name: 'Belly of the Beast, Explorer Armour' } },
+      { method: 'config.set', params: { var: 'multiplierNearbyEnemies', value: 3 } },
+    ],
+  },
+  {
+    id: 'integrated-warrior-armour',
+    name: 'Warrior armour stack (item+belt+config)',
+    steps: [
+      { method: 'character.setClass', params: { classId: 6 } },
+      { method: 'character.setLevel', params: { level: 92 } },
+      { method: 'items.equipUnique', params: { name: 'Belly of the Beast, Explorer Armour' } },
+      {
+        method: 'items.pasteItem',
+        params: { text: 'Rarity: RARE\nGirded Coil\nRawhide Belt\n--------\n+55 to maximum Life\n+25% to all Elemental Resistances\n' },
+      },
+      { method: 'config.set', params: { var: 'enemyIsBoss', value: 'Pinnacle' } },
+      { method: 'config.set', params: { var: 'resistancePenalty', value: -60 } },
+    ],
+  },
+  {
+    id: 'integrated-ranger-undo',
+    name: 'Ranger build with undo/redo (mutation journal)',
+    steps: [
+      { method: 'character.setClass', params: { classId: 2 } },
+      { method: 'character.setLevel', params: { level: 70 } },
+      { method: 'skills.addGroup', params: { label: 'A' } },
+      { method: 'skills.addGem', params: { group: 1, nameSpec: 'Fireball', level: 10, quality: 0 } },
+      { method: 'skills.setGem', params: { group: 1, index: 1, level: 18 } },
+      { method: 'build.undo' }, // revert level 18 -> 10
+      { method: 'build.redo' }, // back to 18
+      { method: 'skills.setMainGroup', params: { index: 1 } },
+      { method: 'skills.setGroupFullDPS', params: { index: 1, include: true } },
+    ],
+  },
+];
+for (const s of INTEGRATED) SKILL_SETUPS.push(s);
+
 for (const s of SKILL_SETUPS) {
-  SCENARIOS.push({ id: s.id, name: s.id, steps: s.steps });
+  SCENARIOS.push({ id: s.id, name: s.name || s.id, steps: s.steps });
 }
