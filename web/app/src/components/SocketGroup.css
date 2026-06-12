@@ -1,0 +1,90 @@
+.socket-group {
+  border: 1px solid var(--bronze-faint);
+  border-radius: var(--radius);
+  background: var(--panel-raised);
+  margin-bottom: var(--s-3);
+  padding: var(--s-3);
+}
+.socket-group.is-main {
+  border-color: var(--gold-dim);
+  box-shadow: inset 2px 0 0 var(--gold);
+}
+.socket-group.is-disabled {
+  opacity: 0.6;
+}
+.sg-head {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  margin-bottom: var(--s-2);
+  flex-wrap: wrap;
+}
+.sg-label {
+  flex: 1;
+  min-width: 120px;
+}
+.sg-main-badge {
+  font-size: var(--fs-xs);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gold-bright);
+  border: 1px solid var(--gold-dim);
+  border-radius: 999px;
+  padding: 1px 8px;
+}
+.sg-source {
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+}
+.sg-gems {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: var(--s-2);
+}
+.sg-empty {
+  padding: 4px 2px;
+}
+
+.gem-pill {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: 4px 6px;
+  border-radius: var(--radius);
+  background: rgba(0, 0, 0, 0.25);
+}
+.gem-pill.is-disabled .gem-name {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+.gem-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.gem-pill.is-skill .gem-name {
+  color: var(--gold-bright);
+}
+.gem-pill.is-support .gem-name {
+  color: var(--supported);
+}
+.gem-pill.is-error .gem-name {
+  color: var(--unsupported);
+}
+.gem-num {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+}
+.gem-num .pob-input {
+  width: 52px;
+  padding: 3px 5px;
+}
+.sg-add {
+  max-width: 320px;
+}

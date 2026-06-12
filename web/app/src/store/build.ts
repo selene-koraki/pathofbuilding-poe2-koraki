@@ -12,7 +12,7 @@ import type {
   ClassCatalogue,
 } from '../../../shared/dto';
 
-export type TabId = 'build' | 'config' | 'notes';
+export type TabId = 'build' | 'skills' | 'config' | 'notes';
 
 interface AppState {
   connected: boolean;
@@ -45,6 +45,17 @@ interface AppState {
   setMainGroup: (index: number) => Promise<void>;
   setMainSkill: (group: number, skillIndex: number) => Promise<void>;
   saveNotes: (text: string) => Promise<void>;
+  // Skills
+  addGroup: (label?: string) => Promise<void>;
+  removeGroup: (index: number) => Promise<void>;
+  renameGroup: (index: number, label: string) => Promise<void>;
+  setGroupEnabled: (index: number, enabled: boolean) => Promise<void>;
+  setGroupFullDPS: (index: number, include: boolean) => Promise<void>;
+  addGem: (group: number, nameSpec: string) => Promise<void>;
+  setGem: (group: number, index: number, patch: Record<string, unknown>) => Promise<void>;
+  removeGem: (group: number, index: number) => Promise<void>;
+  pasteGroup: (text: string) => Promise<void>;
+  searchGems: (q: string) => Promise<Array<{ name: string; support: boolean }>>;
 }
 
 export const useStore = create<AppState>((set, get) => ({
@@ -182,5 +193,40 @@ export const useStore = create<AppState>((set, get) => ({
   saveNotes: async (text) => {
     set({ notes: text });
     await client.request('notes.set', { buildId: get().activeId, text });
+  },
+
+  addGroup: async (label) => {
+    await get().command('skills.addGroup', { label });
+  },
+  removeGroup: async (index) => {
+    await get().command('skills.removeGroup', { index });
+  },
+  renameGroup: async (index, label) => {
+    await get().command('skills.renameGroup', { index, label });
+  },
+  setGroupEnabled: async (index, enabled) => {
+    await get().command('skills.setGroupEnabled', { index, enabled });
+  },
+  setGroupFullDPS: async (index, include) => {
+    await get().command('skills.setGroupFullDPS', { index, include });
+  },
+  addGem: async (group, nameSpec) => {
+    await get().command('skills.addGem', { group, nameSpec });
+  },
+  setGem: async (group, index, patch) => {
+    await get().command('skills.setGem', { group, index, ...patch });
+  },
+  removeGem: async (group, index) => {
+    await get().command('skills.removeGem', { group, index });
+  },
+  pasteGroup: async (text) => {
+    await get().command('skills.pasteGroup', { text });
+  },
+  searchGems: async (q) => {
+    const res = await client.request<{ gems: Array<{ name: string; support: boolean }> }>(
+      'skills.searchGems',
+      { buildId: get().activeId, q },
+    );
+    return res.gems;
   },
 }));

@@ -81,25 +81,46 @@ function M.config(build)
 	return { input = input, shown = shown }
 end
 
--- Socket-group summary for the sidebar header selectors.
+-- Socket-group state for the header selectors AND the Skills tab (full gem list).
 function M.skills(build)
 	local groups = {}
 	for i, group in ipairs(build.skillsTab.socketGroupList or {}) do
 		local label = (group.displayLabel and group.displayLabel:match("%S") and group.displayLabel)
 			or (group.label and group.label:match("%S") and group.label)
 			or ("Group " .. i)
+		-- Active skills (for the main-skill selector + header).
 		local skills = {}
 		for _, active in ipairs(group.displaySkillList or {}) do
 			local ge = active.activeEffect and active.activeEffect.grantedEffect
 			skills[#skills + 1] = (ge and ge.name) or "?"
 		end
+		-- Full gem instances (for the Skills tab editor).
+		local gems = {}
+		for _, gem in ipairs(group.gemList or {}) do
+			local support = gem.gemData and gem.gemData.grantedEffect and gem.gemData.grantedEffect.support
+			gems[#gems + 1] = {
+				nameSpec = gem.nameSpec or "",
+				displayName = (gem.gemData and gem.gemData.name) or gem.nameSpec or "",
+				level = gem.level,
+				quality = gem.quality,
+				enabled = gem.enabled ~= false,
+				count = gem.count or 1,
+				support = support and true or false,
+				color = gem.color,
+				error = gem.errMsg,
+			}
+		end
 		groups[#groups + 1] = {
 			index = i,
 			label = label,
+			rawLabel = group.label or "",
 			enabled = group.enabled ~= false,
 			includeInFullDPS = group.includeInFullDPS or false,
+			source = group.source,
+			slot = group.slot,
 			mainActiveSkill = group.mainActiveSkill or 1,
 			skills = skills,
+			gems = gems,
 		}
 	end
 	return { mainSocketGroup = build.mainSocketGroup, groups = groups }

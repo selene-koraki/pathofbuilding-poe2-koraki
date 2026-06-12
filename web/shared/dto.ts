@@ -29,14 +29,31 @@ export interface ConfigState {
   shown: string[];
 }
 
-/** A socket group summarised for the header selectors. */
+/** One gem instance inside a socket group. */
+export interface GemInstance {
+  nameSpec: string;
+  displayName: string;
+  level: number;
+  quality: number;
+  enabled: boolean;
+  count: number;
+  support: boolean;
+  color?: string;
+  error?: string;
+}
+
+/** A socket group: header summary + full gem list for the Skills tab. */
 export interface SkillGroupSummary {
   index: number;
   label: string;
+  rawLabel?: string;
   enabled: boolean;
   includeInFullDPS: boolean;
+  source?: string;
+  slot?: string;
   mainActiveSkill: number;
   skills: string[];
+  gems: GemInstance[];
 }
 export interface SkillsState {
   mainSocketGroup: number;

@@ -16,19 +16,36 @@ function M.getStat(K, params)
 	return { stat = params.stat, value = out and out[params.stat] }
 end
 
+-- Resolve a possibly-dotted stat path (e.g. "Minion.TotalDPS") against a table.
+local function resolve(out, name)
+	local node = out
+	for part in name:gmatch("[^.]+") do
+		if type(node) ~= "table" then return nil end
+		node = node[part]
+	end
+	return node
+end
+
 -- Bulk snapshot of the main output table (numbers only) — used by the numeric
--- parity harness to assert web == headless. params: { stats? = {names...} }
+-- parity harness to assert web == headless. Supports dotted paths for nested
+-- actors like the minion. params: { stats? = {names...} }
 function M.getOutput(K, params)
 	local out = K.build().calcsTab.mainOutput or {}
 	local result = {}
 	if params and params.stats then
 		for _, name in ipairs(params.stats) do
-			local v = out[name]
+			local v = resolve(out, name)
 			if type(v) == "number" then result[name] = v end
 		end
 	else
 		for k, v in pairs(out) do
-			if type(v) == "number" then result[k] = v end
+			if type(v) == "number" then
+				result[k] = v
+			elseif k == "Minion" and type(v) == "table" then
+				for mk, mv in pairs(v) do
+					if type(mv) == "number" then result["Minion." .. mk] = mv end
+				end
+			end
 		end
 	end
 	return result

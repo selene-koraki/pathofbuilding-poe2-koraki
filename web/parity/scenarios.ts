@@ -40,6 +40,10 @@ export const TRACKED_STATS = [
   'CritChance',
   'BlockChance',
   'MovementSpeedMod',
+  // Minion actor (dotted paths resolve against output.Minion).
+  'Minion.TotalDPS',
+  'Minion.Life',
+  'Minion.CombinedDPS',
 ];
 
 // Phase 1 corpus: every class at a few levels, plus config-toggle matrices.
@@ -78,4 +82,49 @@ for (const cls of CLASSES) {
       });
     }
   }
+}
+
+// Skill scenarios: a real socket group (active + support) driven through the
+// skills RPCs, in Full DPS, against varied enemies. Exercises gem add/level/
+// quality/enable/main-skill end-to-end and pins skill DPS parity.
+const SKILL_SETUPS: { id: string; steps: RpcCall[] }[] = [
+  {
+    id: 'fireball-basic',
+    steps: [
+      { method: 'character.setClass', params: { classId: 7 } }, // Sorceress
+      { method: 'character.setLevel', params: { level: 70 } },
+      { method: 'skills.pasteGroup', params: { text: 'Fireball 20/20 1' } },
+      { method: 'skills.setGroupFullDPS', params: { index: 1, include: true } },
+      { method: 'skills.setMainGroup', params: { index: 1 } },
+    ],
+  },
+  {
+    id: 'fireball-support-boss',
+    steps: [
+      { method: 'character.setClass', params: { classId: 7 } },
+      { method: 'character.setLevel', params: { level: 90 } },
+      { method: 'skills.pasteGroup', params: { text: 'Fireball 20/20 1\nFire Penetration II 20/0 1' } },
+      { method: 'skills.setGroupFullDPS', params: { index: 1, include: true } },
+      { method: 'skills.setMainGroup', params: { index: 1 } },
+      { method: 'config.set', params: { var: 'enemyIsBoss', value: 'Boss' } },
+      { method: 'skills.setGem', params: { group: 1, index: 1, quality: 0 } },
+      { method: 'skills.setGem', params: { group: 1, index: 1, level: 19 } },
+    ],
+  },
+];
+// Minion scenario — Raise Zombie as the main skill produces a minion actor;
+// proves minion stat output (Minion.*) computes identically through the stack.
+SKILL_SETUPS.push({
+  id: 'minion-raise-zombie',
+  steps: [
+    { method: 'character.setClass', params: { classId: 1 } }, // Witch
+    { method: 'character.setLevel', params: { level: 80 } },
+    { method: 'skills.pasteGroup', params: { text: 'Raise Zombie 20/0 1' } },
+    { method: 'skills.setMainGroup', params: { index: 1 } },
+    { method: 'skills.setGroupFullDPS', params: { index: 1, include: true } },
+  ],
+});
+
+for (const s of SKILL_SETUPS) {
+  SCENARIOS.push({ id: s.id, name: s.id, steps: s.steps });
 }
