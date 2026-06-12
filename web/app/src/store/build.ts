@@ -15,7 +15,7 @@ import type {
   ItemSetInfo,
 } from '../../../shared/dto';
 
-export type TabId = 'build' | 'skills' | 'items' | 'config' | 'notes';
+export type TabId = 'build' | 'skills' | 'items' | 'calcs' | 'config' | 'notes';
 
 interface AppState {
   connected: boolean;
@@ -69,6 +69,20 @@ interface AppState {
   itemSets: () => Promise<{ sets: ItemSetInfo[]; activeId: number }>;
   setActiveSet: (id: number) => Promise<void>;
   newItemSet: (title: string) => Promise<void>;
+  // Calcs
+  getFullOutput: () => Promise<Record<string, number>>;
+  getBreakdown: (stat: string) => Promise<BreakdownDetail>;
+  compare: (
+    steps: Array<{ method: string; params?: Record<string, unknown> }>,
+    stats?: string[],
+  ) => Promise<Array<{ stat: string; before: number; after: number; delta: number }>>;
+}
+
+export interface BreakdownDetail {
+  stat: string;
+  lines: string[];
+  columns: string[];
+  rows: string[][];
 }
 
 export const useStore = create<AppState>((set, get) => ({
@@ -276,5 +290,18 @@ export const useStore = create<AppState>((set, get) => ({
   },
   newItemSet: async (title) => {
     await client.request('items.newSet', { buildId: get().activeId, title });
+  },
+
+  getFullOutput: async () => {
+    return client.request<Record<string, number>>('calcs.getOutput', { buildId: get().activeId });
+  },
+  getBreakdown: async (stat) => {
+    return client.request<BreakdownDetail>('calcs.getBreakdown', { buildId: get().activeId, stat });
+  },
+  compare: async (steps, stats) => {
+    const res = await client.request<{
+      deltas: Array<{ stat: string; before: number; after: number; delta: number }>;
+    }>('calcs.compare', { buildId: get().activeId, steps, stats });
+    return res.deltas;
   },
 }));

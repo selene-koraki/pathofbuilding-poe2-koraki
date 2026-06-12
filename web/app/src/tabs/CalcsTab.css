@@ -1,0 +1,72 @@
+.calcs-tab {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  align-items: start;
+}
+@media (max-width: 980px) {
+  .calcs-tab {
+    grid-template-columns: 1fr;
+  }
+}
+.calcs-stat-list {
+  list-style: none;
+  margin: var(--s-2) 0 0;
+  padding: 0;
+  max-height: 62vh;
+  overflow-y: auto;
+}
+.calcs-stat {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s-3);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  padding: 5px 8px;
+  cursor: pointer;
+  color: var(--text);
+  font-family: inherit;
+  font-size: var(--fs-sm);
+}
+.calcs-stat:hover {
+  background: var(--row-alt);
+}
+.calcs-stat.is-active {
+  border-color: var(--gold-dim);
+  background: var(--panel-hover);
+}
+.cs-name {
+  color: var(--text-dim);
+}
+.cs-value {
+  font-variant-numeric: tabular-nums;
+  color: var(--gold-bright);
+}
+.calcs-bd-panel {
+  position: sticky;
+  top: 20px;
+}
+.bd-line {
+  padding: 3px 6px;
+  font-variant-numeric: tabular-nums;
+}
+.bd-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: var(--s-2);
+  font-size: var(--fs-sm);
+}
+.bd-table th,
+.bd-table td {
+  text-align: left;
+  padding: 3px 8px;
+  border-bottom: 1px solid var(--bronze-faint);
+}
+.bd-table th {
+  color: var(--gold-dim);
+  font-family: var(--font-head);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.08em;
+}

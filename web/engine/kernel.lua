@@ -121,6 +121,14 @@ function K.register(domain, tbl)
 	end
 end
 
+-- Invoke a registered method internally (used by calcs.compare to apply
+-- hypothetical mutations before reverting). Errors propagate to the caller.
+function K.invoke(method, params)
+	local fn = methods[method]
+	if not fn then error("unknown method: " .. tostring(method)) end
+	return fn(K, params or {})
+end
+
 -- Load API domains. Each returns a table of {methodName = function(K, params)}.
 -- The build *folder* (library listing, file I/O) is owned by the Node gateway;
 -- the kernel owns build *state* and computation.
