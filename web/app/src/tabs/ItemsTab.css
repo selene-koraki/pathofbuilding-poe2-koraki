@@ -1,0 +1,138 @@
+.items-tab {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-3);
+}
+.items-sets {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+.il-label {
+  font-size: var(--fs-sm);
+  color: var(--text-dim);
+}
+.items-layout {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 18px;
+  align-items: start;
+}
+@media (max-width: 1100px) {
+  .items-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.slot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
+}
+.slot-card {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  text-align: left;
+  background: var(--panel-raised);
+  border: 1px solid var(--bronze-faint);
+  border-radius: var(--radius);
+  padding: 8px 10px;
+  cursor: pointer;
+  color: var(--text);
+  transition: border-color var(--motion-fast);
+}
+.slot-card:hover {
+  border-color: var(--gold-dim);
+}
+.slot-card.is-selected {
+  border-color: var(--gold);
+  box-shadow: inset 2px 0 0 var(--gold);
+}
+.slot-name {
+  font-size: var(--fs-xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.slot-item {
+  font-size: var(--fs-md);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.slot-item.is-empty {
+  color: var(--text-muted);
+  font-style: italic;
+}
+.slot-active {
+  margin-top: 2px;
+  font-size: var(--fs-xs);
+}
+
+/* rarity colours */
+.r-normal {
+  color: #c8c8c8;
+}
+.r-magic {
+  color: var(--magic);
+}
+.r-rare {
+  color: var(--rare);
+}
+.r-unique {
+  color: var(--unique);
+}
+.r-relic {
+  color: var(--positive);
+}
+
+.equip-panel {
+  position: sticky;
+  top: 20px;
+}
+.equip-current {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  margin-bottom: var(--s-3);
+}
+.equip-paste {
+  margin-bottom: var(--s-3);
+}
+.equip-paste textarea {
+  width: 100%;
+  resize: vertical;
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+}
+.equip-paste-actions {
+  display: flex;
+  gap: var(--s-2);
+  margin-top: var(--s-2);
+}
+.unique-list {
+  list-style: none;
+  margin: var(--s-2) 0 0;
+  padding: 0;
+  max-height: 340px;
+  overflow-y: auto;
+}
+.unique-list li {
+  margin-bottom: 2px;
+}
+.unique-list button {
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  padding: 5px 8px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: var(--fs-sm);
+}
+.unique-list button:hover {
+  border-color: var(--bronze-faint);
+  background: var(--panel-hover);
+}

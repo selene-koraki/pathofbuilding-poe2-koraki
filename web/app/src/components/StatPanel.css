@@ -1,0 +1,44 @@
+.pob-statlist {
+  display: flex;
+  flex-direction: column;
+}
+.pob-stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--s-4);
+  padding: 4px 10px;
+  border-radius: var(--radius);
+}
+.pob-stat-row:nth-child(odd) {
+  background: var(--row-alt);
+}
+.pob-stat-label {
+  color: var(--text-dim);
+}
+.pob-stat-value {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+.pob-stat-head {
+  margin: 14px 0 4px;
+  font-family: var(--font-head);
+  font-size: var(--fs-xs);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gold-dim);
+}
+.pob-stat-gap {
+  height: 10px;
+}
+.pob-warnings {
+  margin-top: var(--s-3);
+  border-top: 1px solid var(--bronze-faint);
+  padding-top: var(--s-2);
+}
+.pob-warning {
+  color: var(--warning);
+  font-size: var(--fs-sm);
+  padding: 2px 10px;
+}

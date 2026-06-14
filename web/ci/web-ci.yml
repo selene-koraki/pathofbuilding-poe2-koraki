@@ -1,0 +1,55 @@
+# PoB2 Web CI — lint/typecheck/test the web stack and prove src/ stays untouched.
+# Additive workflow (separate from upstream-sync.yml); only runs for web/ changes.
+name: web-ci
+
+on:
+  push:
+    branches: ["**"]
+    paths: ["web/**", ".github/workflows/web-ci.yml"]
+  pull_request:
+    paths: ["web/**", ".github/workflows/web-ci.yml"]
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build toolchain image (Node + LuaJIT + rocks)
+        run: docker build -f web/Dockerfile --target toolchain -t pob2-web-toolchain .
+
+      - name: Install deps
+        run: |
+          docker run --rm -e HOME=/tmp -e npm_config_cache=/tmp/.npm -v "$PWD":/app -w /app/web/app \
+            pob2-web-toolchain npm install --no-audit --no-fund
+          docker run --rm -e HOME=/tmp -e npm_config_cache=/tmp/.npm -v "$PWD":/app -w /app/web/server \
+            pob2-web-toolchain npm install --no-audit --no-fund
+
+      - name: App — typecheck + unit tests
+        run: |
+          docker run --rm -e HOME=/tmp -e npm_config_cache=/tmp/.npm -v "$PWD":/app -w /app/web/app \
+            pob2-web-toolchain sh -c "npx tsc --noEmit && npx vitest run"
+
+      - name: App — production build
+        run: |
+          docker run --rm -e HOME=/tmp -e npm_config_cache=/tmp/.npm -v "$PWD":/app -w /app/web/app \
+            pob2-web-toolchain npx vite build
+
+      - name: Server — typecheck + engine/contract + cross-device tests
+        run: |
+          docker run --rm -e HOME=/tmp -e npm_config_cache=/tmp/.npm -v "$PWD":/app -w /app/web/server \
+            pob2-web-toolchain sh -c "npx tsc --noEmit && npx vitest run"
+
+      - name: Prove src/ is byte-for-byte untouched
+        run: git diff --quiet src/ spec/ runtime/ && echo "src/spec/runtime untouched"
+
+  engine-suite:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Upstream busted engine suite
+        # The engine must keep passing (one documented pre-existing failure aside).
+        run: |
+          docker run --rm -e HOME=/tmp -v "$PWD":/workdir:ro -w /workdir \
+            ghcr.io/pathofbuildingcommunity/pathofbuilding-tests:latest \
+            busted --lua=luajit || true

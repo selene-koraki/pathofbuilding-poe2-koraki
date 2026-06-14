@@ -1,0 +1,196 @@
+/* Path of Building 2 — web client
+ * Design system intentionally evokes Path of Exile 2's in-game UI:
+ * deep near-black stone, warm gold filigree, engraved serif headers,
+ * and the game's own rarity/element colours (passed through from the engine).
+ */
+
+:root {
+	/* surfaces */
+	--bg:            #07070a;
+	--bg-2:          #0c0b0e;
+	--panel:         rgba(14, 12, 14, 0.78);
+	--panel-raised:  rgba(26, 22, 20, 0.65);
+	--row-alt:       rgba(255, 255, 255, 0.022);
+
+	/* the PoE gold/bronze accent family */
+	--gold:          #c8aa64;
+	--gold-bright:   #efd9a3;
+	--gold-dim:      #7d6a3e;
+	--bronze-line:   #6e5a32;
+	--bronze-faint:  #2e2719;
+
+	/* text */
+	--text:          #cdc7ba;
+	--text-dim:      #8a8170;
+	--text-muted:    #5f5848;
+
+	--radius: 2px;
+	--pad: 16px;
+	font-size: 15px;
+}
+
+* { box-sizing: border-box; }
+
+html, body { height: 100%; }
+
+body {
+	margin: 0;
+	color: var(--text);
+	font-family: "EB Garamond", "Fontin", Georgia, serif;
+	background:
+		radial-gradient(1200px 700px at 50% -10%, #15110d 0%, transparent 60%),
+		radial-gradient(900px 900px at 50% 120%, #100c14 0%, transparent 55%),
+		var(--bg);
+	background-attachment: fixed;
+	display: flex;
+	flex-direction: column;
+}
+
+/* ---------- top bar ---------- */
+.topbar {
+	text-align: center;
+	padding: 22px 16px 16px;
+	border-bottom: 1px solid var(--bronze-line);
+	box-shadow: 0 1px 0 #000, 0 2px 0 var(--bronze-faint);
+	background: linear-gradient(180deg, rgba(40,32,20,0.35), transparent);
+}
+.topbar h1 {
+	margin: 0;
+	font-family: "Cinzel", "Trajan Pro", Georgia, serif;
+	font-weight: 700;
+	letter-spacing: 0.14em;
+	font-size: 1.9rem;
+	color: var(--gold-bright);
+	text-shadow: 0 0 18px rgba(200,170,100,0.25), 0 2px 2px #000;
+}
+.topbar h1 .two { color: var(--gold); }
+.tagline {
+	margin: 4px 0 0;
+	color: var(--text-muted);
+	font-style: italic;
+	letter-spacing: 0.05em;
+	font-size: 0.85rem;
+}
+
+/* ---------- layout ---------- */
+.layout {
+	flex: 1;
+	display: grid;
+	grid-template-columns: 260px 1fr;
+	gap: 18px;
+	padding: 20px;
+	max-width: 1100px;
+	width: 100%;
+	margin: 0 auto;
+}
+
+/* ---------- panels: dark stone with a thin engraved gold frame ---------- */
+.panel {
+	position: relative;
+	background: var(--panel);
+	border: 1px solid var(--bronze-line);
+	border-radius: var(--radius);
+	padding: var(--pad);
+	box-shadow:
+		inset 0 0 0 1px rgba(0,0,0,0.6),
+		inset 0 0 40px rgba(0,0,0,0.55),
+		0 6px 24px rgba(0,0,0,0.5);
+}
+/* little corner ticks, like the game's framed panels */
+.panel::before, .panel::after {
+	content: "";
+	position: absolute;
+	width: 10px; height: 10px;
+	border-color: var(--gold);
+	border-style: solid;
+	opacity: 0.7;
+}
+.panel::before { top: 4px; left: 4px; border-width: 1px 0 0 1px; }
+.panel::after  { bottom: 4px; right: 4px; border-width: 0 1px 1px 0; }
+
+.section {
+	margin: 0 0 12px;
+	font-family: "Cinzel", Georgia, serif;
+	font-size: 0.82rem;
+	font-weight: 700;
+	letter-spacing: 0.18em;
+	text-transform: uppercase;
+	color: var(--gold);
+	border-bottom: 1px solid var(--bronze-faint);
+	padding-bottom: 8px;
+}
+
+/* ---------- build list ---------- */
+.build-list { list-style: none; margin: 0; padding: 0; }
+.build-list li { margin: 0 0 6px; }
+.build-list button {
+	width: 100%;
+	text-align: left;
+	background: var(--panel-raised);
+	border: 1px solid var(--bronze-faint);
+	color: var(--text);
+	font-family: inherit;
+	font-size: 0.98rem;
+	padding: 9px 12px;
+	border-radius: var(--radius);
+	cursor: pointer;
+	transition: border-color 0.12s, color 0.12s, background 0.12s;
+}
+.build-list button:hover {
+	border-color: var(--gold);
+	color: var(--gold-bright);
+	background: rgba(60,48,28,0.4);
+}
+.build-list button.active {
+	border-color: var(--gold);
+	color: var(--gold-bright);
+	box-shadow: inset 3px 0 0 var(--gold);
+}
+
+/* ---------- character header ---------- */
+.char-header {
+	margin-bottom: 18px;
+	padding-bottom: 14px;
+	border-bottom: 1px solid var(--bronze-faint);
+}
+.char-title {
+	font-family: "Cinzel", Georgia, serif;
+	font-size: 1.5rem;
+	color: var(--gold-bright);
+	letter-spacing: 0.06em;
+}
+.char-sub { color: var(--text-dim); margin-top: 4px; font-size: 0.95rem; }
+
+/* ---------- stat list ---------- */
+.stat-list { display: flex; flex-direction: column; }
+.stat-row {
+	display: flex;
+	justify-content: space-between;
+	align-items: baseline;
+	gap: 16px;
+	padding: 4px 10px;
+	border-radius: var(--radius);
+}
+.stat-row:nth-child(odd) { background: var(--row-alt); }
+.stat-row .label { color: var(--text-dim); }
+.stat-row .value { font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+.stat-head {
+	margin: 14px 0 4px;
+	font-family: "Cinzel", Georgia, serif;
+	font-size: 0.78rem;
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+	color: var(--gold-dim);
+}
+.stat-gap { height: 10px; }
+
+.muted { color: var(--text-muted); font-style: italic; }
+
+/* ---------- status bar ---------- */
+.statusbar {
+	border-top: 1px solid var(--bronze-faint);
+	padding: 8px 20px;
+	font-size: 0.8rem;
+	color: var(--text-muted);
+	letter-spacing: 0.04em;
+}

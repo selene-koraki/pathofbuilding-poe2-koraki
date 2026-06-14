@@ -1,0 +1,66 @@
+-- api/character — level / class / ascendancy controls.
+local serialize = require("serialize")
+
+local M = {}
+
+function M.getMeta(K)
+	return serialize.meta(K.build())
+end
+
+-- The class + ascendancy catalogue for the current tree version, exactly as the
+-- desktop class/ascendancy dropdowns present it.
+function M.getClasses(K)
+	local build = K.build()
+	build:UpdateClassDropdowns()
+	local classes = {}
+	for _, c in ipairs(build.controls.classDrop.list or {}) do
+		local asc = {}
+		for _, a in ipairs(c.ascendancies or {}) do
+			-- classDrop entries store the display name under `label` (see
+			-- Build.lua:UpdateClassDropdowns), same as classes do below.
+			asc[#asc + 1] = { ascendClassId = a.ascendClassId, name = a.label }
+		end
+		classes[#classes + 1] = { classId = c.classId, name = c.label, ascendancies = asc }
+	end
+	return {
+		classes = classes,
+		curClassId = build.spec.curClassId,
+		curAscendClassId = build.spec.curAscendClassId,
+	}
+end
+
+-- params: { level }
+function M.setLevel(K, params)
+	local build = K.build()
+	local lvl = tonumber(params.level)
+	if not lvl or lvl < 1 or lvl > 100 then error("level must be 1..100") end
+	build.characterLevel = lvl
+	-- Mirror the desktop level edit (Build.lua level EditControl): a manual level
+	-- turns OFF auto mode, else OnFrame recomputes the level back from progress.
+	build.characterLevelAutoMode = false
+	pcall(function() build.configTab:BuildModList() end)
+	K.recompute()
+	return serialize.state(K)
+end
+
+-- params: { classId }  (numeric class id on the passive tree)
+function M.setClass(K, params)
+	local build = K.build()
+	build.spec:SelectClass(tonumber(params.classId))
+	build.spec:AddUndoState()
+	build.buildFlag = true
+	K.recompute()
+	return serialize.state(K)
+end
+
+-- params: { ascendClassId }
+function M.setAscendancy(K, params)
+	local build = K.build()
+	build.spec:SelectAscendClass(tonumber(params.ascendClassId))
+	build.spec:AddUndoState()
+	build.buildFlag = true
+	K.recompute()
+	return serialize.state(K)
+end
+
+return M

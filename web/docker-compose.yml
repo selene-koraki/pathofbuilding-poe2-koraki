@@ -1,0 +1,63 @@
+# PoB2 Web — self-hosted LAN deployment.
+#   docker compose -f web/docker-compose.yml up -d --build
+# Serves the SPA + gateway + engine on PORT (default 7632), bound to 0.0.0.0 so
+# any device on the LAN can reach http://<server-ip>:7632.
+#
+# (The repo's root docker-compose.yml is the upstream busted-test harness and is
+#  intentionally left untouched; this is a separate, additive compose file.)
+
+services:
+  web:
+    build:
+      context: ..
+      dockerfile: web/Dockerfile
+      target: runtime
+    image: pob2-web
+    container_name: pob2-web
+    restart: unless-stopped
+    environment:
+      PORT: "${POB_PORT:-7632}"
+      HOST: 0.0.0.0
+      POB_BUILD_DIR: /app/web/builds
+    ports:
+      - "${POB_PORT:-7632}:7632"
+    volumes:
+      # Shared Builds folder (the same plain-XML files the desktop app uses).
+      # Repoint at a desktop/Wine Builds folder by setting POB_BUILD_DIR_HOST.
+      - "${POB_BUILD_DIR_HOST:-./builds}:/app/web/builds"
+    security_opt:
+      - no-new-privileges:true
+
+  # Dev profile: source-mounted gateway (tsx watch) + Vite HMR.
+  #   docker compose -f web/docker-compose.yml --profile dev up
+  gateway-dev:
+    profiles: ["dev"]
+    image: pob2-web-toolchain
+    build:
+      context: ..
+      dockerfile: web/Dockerfile
+      target: toolchain
+    working_dir: /app/web/server
+    command: sh -c "npm install --no-audit --no-fund && npm run dev"
+    environment:
+      PORT: "7632"
+      HOST: 0.0.0.0
+      POB_BUILD_DIR: /app/web/builds
+    ports:
+      - "7632:7632"
+    volumes:
+      - "..:/app"
+
+  vite-dev:
+    profiles: ["dev"]
+    image: pob2-web-toolchain
+    working_dir: /app/web/app
+    command: sh -c "npm install --no-audit --no-fund && npm run dev -- --host"
+    environment:
+      POB_GATEWAY: "http://gateway-dev:7632"
+    ports:
+      - "5173:5173"
+    volumes:
+      - "..:/app"
+    depends_on:
+      - gateway-dev

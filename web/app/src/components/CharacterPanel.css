@@ -1,0 +1,23 @@
+.char-title {
+  font-family: var(--font-head);
+  font-size: var(--fs-xl);
+  color: var(--gold-bright);
+  letter-spacing: 0.06em;
+  margin-bottom: var(--s-4);
+}
+.char-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--s-3);
+  margin-bottom: var(--s-3);
+}
+.char-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: var(--fs-sm);
+  color: var(--text-dim);
+}
+.char-grid .pob-input {
+  width: 100%;
+}

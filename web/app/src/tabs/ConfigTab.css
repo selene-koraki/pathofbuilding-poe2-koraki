@@ -1,0 +1,41 @@
+.config-search {
+  max-width: 340px;
+  margin-bottom: var(--s-4);
+}
+.config-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 18px;
+  align-items: start;
+}
+.config-section {
+  display: flex;
+  flex-direction: column;
+}
+.cfg-row {
+  padding: 5px 4px;
+  font-size: var(--fs-md);
+}
+.cfg-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+}
+.cfg-field .pob-input {
+  max-width: 150px;
+  flex: 0 0 auto;
+}
+.cfg-label {
+  color: var(--text);
+}
+.cfg-textarea {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.cfg-textarea textarea {
+  width: 100%;
+  resize: vertical;
+  font-family: var(--font-body);
+}
